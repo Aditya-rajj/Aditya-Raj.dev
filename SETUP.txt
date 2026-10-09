@@ -1,0 +1,53 @@
+PORTFOLIO CLOUD SETUP (about 5 minutes; same Firebase project and Cloudinary as your "Our Story" diary)
+
+1) cloud-config.js
+   Already filled in: Firebase (project sheandme-d9d39, from your diary) and Cloudinary (cloud name dxe1rbdud,
+   unsigned upload preset portfolio_unsigned).
+   If an upload says "Upload preset not found" or "must be whitelisted for unsigned uploads", open Cloudinary >
+   Settings > Upload > Upload presets and check that portfolio_unsigned exists and its Signing mode is Unsigned.
+   Optional safety limits on that preset: folder "portfolio", allowed formats jpg, png, webp, avif, pdf, max file size 10 MB.
+   You do NOT need your Cloudinary API key in this site, and the API SECRET must never be put in it.
+
+2) Firebase console (project sheandme-d9d39)
+   a) Authentication > Sign-in method: enable Email/Password (keep Anonymous enabled, the diary uses it)
+   b) Authentication > Users > Add user: ishaan8862@gmail.com + a strong password (this is your Manager login)
+   c) Authentication > Settings > Authorized domains: add the domain where this portfolio is hosted
+      (localhost is already allowed)
+   d) Firestore > Rules: publish these rules. They keep the diary working for signed-in visitors and lock the
+      portfolio so only you can edit it:
+
+      rules_version = '2';
+      service cloud.firestore {
+        match /databases/{database}/documents {
+          match /memories/{id} { allow read, write: if request.auth != null; }
+          match /settings/{id} { allow read, write: if request.auth != null; }
+          match /portfolio/{id} {
+            allow read: if true;
+            allow write: if request.auth != null && request.auth.token.email == "ishaan8862@gmail.com";
+          }
+        }
+      }
+
+      Why replace instead of add: Firestore rules are OR-ed. If your current rules contain a catch-all such as
+      match /{document=**} { allow read, write: if true; } (or "if request.auth != null"), anyone, including
+      anonymous visitors, could edit your portfolio. After publishing, open the diary once to confirm it still works.
+
+3) Open admin.html, sign in, edit anything, press Publish. The site shows the change on its next load.
+
+NOTES
+- Until you publish, the site shows the defaults built into cloud.js. If the cloud is offline, the site still works.
+- Images go to Cloudinary (resized in your browser first, served optimised). For the resume PDF: if the uploaded
+  link will not open, paste a Google Drive or Dropbox link instead.
+- If your Firebase API key has website restrictions (Google Cloud console > APIs & Services > Credentials),
+  add the portfolio domain there too.
+- In headings and the tagline, wrap a word in *stars* to make it italic serif.
+
+IF THE SITE DOES NOT SHOW YOUR CHANGES
+- Manager > tap your avatar > "Check site connection", or open your site with ?debug at the end of the address
+  (for example yoursite.com/?debug). It tells you exactly what is wrong:
+  * "Firestore rules block public reads"  -> publish the rules from step 2d (the portfolio rule must have allow read: if true).
+    The Manager works while you are signed in, but visitors are not signed in, so they need that public read rule.
+  * "Your Firebase API key blocks this website" -> Google Cloud console > APIs & Services > Credentials > your browser key:
+    allow this domain (or set no application restriction) and make sure the Cloud Firestore API is allowed.
+  * "Nothing is published yet" -> press Publish in the Manager.
+- After uploading new site files, hard-refresh once (the files carry a version tag so browsers fetch the new ones).
