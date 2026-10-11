@@ -1,7 +1,7 @@
 /* Portfolio Manager: edit anything, press Publish, the site updates. */
 const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const el = h => { const t = document.createElement('template'); t.innerHTML = h.trim(); return t.content.firstChild; };
-let DATA = null, dirty = false, tab = 'Hero', db, auth;
+let DATA = null, dirty = false, tab = 'Hero', db, auth, migrated = false;
 const OPEN = new WeakSet(), coarse = matchMedia('(pointer:coarse)').matches;
 const toast = (m, i = 'fa-circle-check', ms = 3400) => { const t = $('#toast'); t.innerHTML = `<i class="fa-solid ${i}"></i>${esc(m)}`; t.classList.add('on'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('on'), ms); };
 const SYNC = { ok: '<i class="fa-solid fa-circle-check"></i><em>Published</em>', dirty: '<i class="fa-solid fa-circle"></i><em>Unpublished</em>', busy: '<i class="fa-solid fa-spinner fa-spin"></i><em>Publishing…</em>' };
@@ -19,7 +19,13 @@ const NOTE = '<div class="note"><i class="fa-solid fa-triangle-exclamation"></i>
 const SECTIONS = {
   Hero: { i: 'fa-house', d: 'The first screen of your site', sub: 'hero', fields: [F('img', 'image', 'Hero photo', { max: 1400 }), F('text', 'status', 'Status line (top right)'), F('text', 'line1', 'Name, first line'), F('text', 'line2', 'Name, second line'), F('area', 'tagline', 'Tagline', { hint: 'Wrap a word in *stars* to make it italic serif.' })] },
   About: { i: 'fa-user', d: 'Who you are, your numbers and skills', sub: 'about', fields: [F('area', 'heading', 'Heading', { hint: 'Wrap a word in *stars* for the serif highlight.' }), F('text', 'quote', 'Quote'),
-    F('list', 'stats', 'Stats', { noun: 'stat', add: { label: 'New stat', n: 0 }, head: it => ({ t: '<i class="fa-solid fa-chart-simple"></i>', a: it.label, b: String(it.n) }), fields: [F('text', 'label', 'Label'), F('num', 'n', 'Number')] }),
+    F('list', 'stats', 'Stats', { noun: 'stat', add: { label: 'New stat', auto: 'manual', n: 0, since: '2023-01', base: 0 },
+      head: it => ({ t: '<i class="fa-solid fa-chart-simple"></i>', a: it.label, b: statVal(it, DATA.projects.length) + (it.auto === 'years' ? ' · grows every year' : it.auto === 'projects' ? ' · grows with your projects' : '') }),
+      fields: [F('text', 'label', 'Label'),
+        F('sel', 'auto', 'Mode', { ic: 'fa-solid fa-wand-magic-sparkles', opts: { manual: ['', 'Manual number'], years: ['', 'Years since a date (grows every year)'], projects: ['', 'Projects (grows when you add one)'] } }),
+        F('num', 'n', 'Number', { when: ['auto', 'manual'] }),
+        F('month', 'since', 'Since (month and year)', { when: ['auto', 'years'], ic: 'fa-regular fa-calendar', hint: 'The number goes up by itself every year on this month.' }),
+        F('num', 'base', 'Other projects not listed here', { when: ['auto', 'projects'], ic: 'fa-solid fa-plus', hint: 'Total shown = this number + the projects you list in the Projects tab.' })] }),
     F('area', 'dev', 'Development & design skills', { hint: 'Comma separated.' }), F('area', 'creative', 'Creative skills', { hint: 'Comma separated.' }), F('file', 'resume', 'Resume (PDF)')] },
   Projects: { i: 'fa-briefcase', d: 'The cards on the Work page', fields: [F('list', 'projects', 'Projects', { noun: 'project', add: { title: 'New project', url: 'https://', image: '' },
     head: it => ({ t: it.image ? `<img src="${esc(cdn(it.image, 100))}" alt="">` : '<i class="fa-regular fa-image"></i>', a: it.title, b: it.url }), fields: [F('text', 'title', 'Title'), F('text', 'url', 'Link'), F('img', 'image', 'Cover image', { max: 1200 })] })] },
@@ -27,27 +33,27 @@ const SECTIONS = {
   Music: { i: 'fa-music', d: 'Links used on the Sound page', sub: 'music', fields: [F('text', 'spotify', 'Spotify artist link'), F('text', 'website', 'Music website link'), F('text', 'feed', 'Songs feed link (songs.json)')] },
   Contact: { i: 'fa-paper-plane', d: 'How people reach you', fields: [
     F('list', 'contacts', 'Contact options', { noun: 'contact option', add: { cat: 'Chat', icon: 'link', title: 'New', note: '', link: 'https://' }, head: it => ({ t: ico(it.icon), a: it.title, b: it.cat }),
-      fields: [F('text', 'cat', 'Category (tab name)', { dl: 1 }), F('sel', 'icon', 'Icon', { opts: ICONS }), F('text', 'title', 'Title'), F('text', 'note', 'Note'), F('text', 'link', 'Link', { hint: 'Start with https://, mailto: or tel:' })] }),
+      fields: [F('text', 'cat', 'Category (tab name)', { dl: 1 }), F('sel', 'icon', 'Icon', { opts: ICONS, icons: 1 }), F('text', 'title', 'Title'), F('text', 'note', 'Note'), F('text', 'link', 'Link', { hint: 'Start with https://, mailto: or tel:' })] }),
     F('list', 'socials', 'Social icons', { noun: 'social icon', add: { icon: 'link', title: 'New', link: '' }, head: it => ({ t: ico(it.icon), a: it.title, b: it.link || 'No link yet (shown greyed out)' }),
-      fields: [F('sel', 'icon', 'Icon', { opts: ICONS }), F('text', 'title', 'Name'), F('text', 'link', 'Link', { hint: 'Leave empty to show the icon greyed out.' })] })] }
+      fields: [F('sel', 'icon', 'Icon', { opts: ICONS, icons: 1 }), F('text', 'title', 'Name'), F('text', 'link', 'Link', { hint: 'Leave empty to show the icon greyed out.' })] })] }
 };
 
-function fields(box, fs, obj) { fs.forEach(f => box.append(field(f, obj))); }
+function fields(box, fs, obj) { fs.forEach(f => { const w = field(f, obj); box.append(w); if (f.when) { const vis = () => { w.hidden = obj[f.when[0]] !== f.when[1]; }; vis(); box.addEventListener('pf-change', vis); } }); }
 const lab = f => `<label><i class="${f.ic || KI[f.k] || 'fa-solid fa-pen'}"></i>${esc(f.l)}</label>`;
 const stats = (file, r) => file.type.startsWith('image/') && r.before > r.after ? `Optimised <b>${kbs(r.before)} → ${kbs(r.after)}</b> (−${Math.round(100 - r.after / r.before * 100)}%) · ${r.w}×${r.h}` : `Uploaded · ${kbs(r.after)}`;
 
 function field(f, o) {
   const w = el(`<div class="f">${lab(f)}${f.hint ? `<span class="hint">${esc(f.hint)}</span>` : ''}<div class="c"></div></div>`), c = $('.c', w);
   const fire = () => w.dispatchEvent(new Event('pf-change', { bubbles: true })), set = v => { o[f.k] = v; mark(); fire(); };
-  if (f.t === 'text' || f.t === 'num') {
+  if (f.t === 'text' || f.t === 'num' || f.t === 'month') {
     const url = /^(url|link|website|spotify|instagram|feed)$/.test(f.k);
-    const i = el(`<input type="${f.t === 'num' ? 'number' : 'text'}"${f.dl ? ' list="dl"' : ''}${url ? ' inputmode="url"' : ''} autocapitalize="off" autocorrect="off" spellcheck="false">`);
+    const i = el(`<input type="${f.t === 'num' ? 'number' : f.t === 'month' ? 'month' : 'text'}"${f.dl ? ' list="dl"' : ''}${url ? ' inputmode="url"' : ''} autocapitalize="off" autocorrect="off" spellcheck="false">`);
     i.value = o[f.k] == null ? '' : o[f.k]; i.oninput = () => set(f.t === 'num' ? +i.value : i.value); c.append(i);
   } else if (f.t === 'area') {
     const i = el('<textarea rows="3"></textarea>'); i.value = o[f.k] || ''; i.oninput = () => set(i.value); c.append(i);
   } else if (f.t === 'sel') {
-    const r = el('<div class="sel"><span class="pvi"></span></div>'), i = el('<select>' + Object.entries(f.opts).map(([k, v]) => `<option value="${k}">${esc(v[1])}</option>`).join('') + '</select>'), pv = $('.pvi', r);
-    const show = () => { pv.innerHTML = ico(i.value); }; i.value = o[f.k]; show(); i.onchange = () => { set(i.value); show(); }; r.append(i); c.append(r);
+    const r = el(f.icons ? '<div class="sel"><span class="pvi"></span></div>' : '<div class="sel"></div>'), i = el('<select>' + Object.entries(f.opts).map(([k, v]) => `<option value="${k}">${esc(v[1])}</option>`).join('') + '</select>'), pv = $('.pvi', r);
+    const show = () => { if (pv) pv.innerHTML = ico(i.value); }; i.value = o[f.k]; show(); i.onchange = () => { set(i.value); show(); }; r.append(i); c.append(r);
   } else if (f.t === 'img' || f.t === 'file') {
     const img = f.t === 'img';
     const box = el(`<div class="up"><div class="pvb"><i class="${img ? 'fa-regular fa-image' : 'fa-regular fa-file-pdf'}"></i></div><div class="upr"><div class="row"><button type="button" class="b go"><i class="fa-solid fa-cloud-arrow-up"></i><span>Upload</span></button><button type="button" class="b rm" aria-label="Remove"><i class="fa-regular fa-trash-can"></i></button></div><span class="stat">${img ? 'Optimised automatically before upload.' : 'PDF or any file.'}</span></div></div>`);
@@ -118,12 +124,13 @@ function openTab(n, top) {
 }
 Object.keys(SECTIONS).forEach(n => { const b = el(`<button type="button" data-t="${n}"><i class="fa-solid ${SECTIONS[n].i}"></i>${n}</button>`); b.onclick = () => openTab(n, 1); $('#nav').append(b); });
 
-const merge = c => { const d = JSON.parse(JSON.stringify(DEFAULTS)); if (c) Object.keys(d).forEach(k => { if (c[k] !== undefined) d[k] = Array.isArray(d[k]) ? c[k] : Object.assign({}, d[k], c[k]); }); return d; };
+const merge = c => { const d = JSON.parse(JSON.stringify(DEFAULTS)); if (c) Object.keys(d).forEach(k => { if (c[k] !== undefined) d[k] = Array.isArray(d[k]) ? c[k] : Object.assign({}, d[k], c[k]); }); migrated = fixStats(d); return d; };
 async function load() {
   const s = await db.doc(CL.doc || 'portfolio/content').get();
   DATA = merge(s.exists ? JSON.parse(s.data().json) : null); dirty = false; syncAvatar(); openTab(tab);
   diagnose().then(d => { if (!d.ok && d.status !== 404) toast('Heads up: ' + d.msg, 'fa-triangle-exclamation', 11000); });
   if (s.exists) { setSync('ok'); $('#pubbar').classList.remove('show'); } else { setSync('dirty'); $('#pubbar .t').textContent = 'Not published yet'; $('#pubbar').classList.add('show'); }
+  if (migrated) { mark(); toast('Your stats now grow by themselves. Press Publish to save.', 'fa-wand-magic-sparkles', 6000); }
 }
 const show = on => { $('#login').hidden = on; $('#shell').hidden = !on; };
 

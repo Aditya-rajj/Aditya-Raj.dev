@@ -19,7 +19,7 @@ const DEFAULTS = {
   hero: { image: 'assets/profile.jpg', status: 'Indian from earth', line1: 'Aditya', line2: 'Raj', tagline: 'Independent creator & *musician.* Visuals, music and digital experiences.' },
   about: {
     heading: 'Developer, photographer & *musician.*', quote: 'Jack of all trades, *master of none.*',
-    stats: [{ label: 'Projects', n: 56 }, { label: 'Clients', n: 23 }, { label: 'Years', n: 3 }],
+    stats: [{ label: 'Projects', auto: 'projects', base: 52, n: 56 }, { label: 'Clients', auto: 'manual', n: 23 }, { label: 'Years', auto: 'years', since: '2023-01', n: 3 }],
     dev: 'HTML5, CSS3, JavaScript, Python, C & C++, Java, mySQL, CoralDraw, Figma, Android Dev, AOSP',
     creative: 'Graphic Design, UI/UX, Music Production, Photography, Cinematography, Video Editing',
     resume: 'assets/resume.pdf'
@@ -61,6 +61,19 @@ const DEFAULTS = {
     { icon: 'facebook', title: 'Facebook', link: '' }
   ]
 };
+
+/* Stats can grow by themselves: "years" counts up every year from a start month, "projects" = a base number + the projects you list */
+const statVal = (s, n) => s.auto === 'years' ? Math.max(0, Math.floor((Date.now() - new Date((s.since || '2023-01') + '-01')) / 31557600000)) : s.auto === 'projects' ? (+s.base || 0) + n : (+s.n || 0);
+function fixStats(c) {   /* upgrades stats saved before this existed, so they grow too (true if anything changed) */
+  let ch = false; const n = (c.projects || []).length, y = new Date().getFullYear();
+  ((c.about || {}).stats || []).forEach(s => {
+    if (s.auto !== undefined) return; ch = true;
+    if (/project/i.test(s.label)) { s.auto = 'projects'; s.base = (+s.n || 0) - n; }
+    else if (/year|experience/i.test(s.label)) { s.auto = 'years'; s.since = (y - (+s.n || 0)) + '-01'; }
+    else s.auto = 'manual';
+  });
+  return ch;
+}
 
 /* Reads your published content straight from Firestore (public read, no SDK needed on the site).
    diagnose() also says WHY it fails, so a silent problem becomes a clear message. */

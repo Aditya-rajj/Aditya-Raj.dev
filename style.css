@@ -126,6 +126,61 @@ h1.big{font-size:clamp(48px,min(25vw,12.5dvh),140px);text-align:center;margin-to
 /* name stays crisp where it crosses the lime badge: dark cut-out outline + soft depth shadow */
 h1.big{text-shadow:3px 0 #000,-3px 0 #000,0 3px #000,0 -3px #000,2px 2px #000,-2px 2px #000,2px -2px #000,-2px -2px #000,0 10px 26px rgba(0,0,0,.6)}
 .badge{box-shadow:0 10px 26px -4px rgba(0,0,0,.65)}
+/* ===== cursor, ripple + glow, hover polish, animated icons ===== */
+:is(.btn,.ic,.rows a,.soc a){position:relative}
+:is(.btn,.ic,.rows a,.soc a,.tabs button,.dock a){overflow:hidden;isolation:isolate}
+:is(.btn,.ic,.card,.lg,.tabs button,.rows a,.soc a,.dock a) .rp{position:absolute;z-index:3;border-radius:50%;pointer-events:none;transform:scale(0);background:var(--rp,rgba(255,255,255,.28));animation:rp .75s cubic-bezier(.22,.8,.3,1) forwards}
+@keyframes rp{to{transform:scale(1);opacity:0}}
+:is(.btn,.ic,.card,.tabs button,.rows a,.soc a,.dock a) .gl{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0;transition:opacity .35s;background:radial-gradient(170px circle at var(--mx,50%) var(--my,50%),var(--gl,rgba(255,255,255,.16)),transparent 65%)}
+:is(.btn,.ic,.card,.tabs button,.rows a,.soc a,.dock a):is(:hover,:active) .gl{opacity:1}
+.btn{--rp:rgba(255,255,255,.6);--gl:rgba(255,255,255,.4)}
+.ic,.soc a,.rows a,.tabs button,.dock a{--rp:rgba(212,255,58,.32);--gl:rgba(212,255,58,.2)}
+.tabs button.on{--rp:rgba(0,0,0,.18)}.card{--rp:rgba(255,255,255,.26);--gl:rgba(212,255,58,.2)}.lg{--rp:rgba(255,255,255,.42)}
+.rows a{transition:padding .4s var(--e),color .3s,background .4s}
+.btn:active,.card:active,.ic:active,.soc a:active,.rows a:active{scale:.97}
+@media(hover:hover){
+ .btn,.card{transition:transform .4s var(--e),translate .4s var(--e),scale .3s var(--e),box-shadow .4s var(--e),border-color .4s}
+ .btn:hover{translate:0 -2px;box-shadow:0 14px 34px -12px rgba(212,255,58,.6)}
+ .card:hover{translate:0 -6px;border-color:rgba(212,255,58,.55);box-shadow:0 26px 50px -20px rgba(212,255,58,.4)}
+ .ic:hover,.soc a:hover{translate:0 -3px;box-shadow:0 12px 26px -12px rgba(212,255,58,.55)}
+ .lg:hover{scale:1.05}
+ .tabs button:hover:not(.on){background:rgba(255,255,255,.06)}
+ .rows a:hover{background:linear-gradient(90deg,rgba(212,255,58,.08),transparent 70%)}
+}
+
+/* animated icons: they play on hover, on tap, and when a navbar item is selected */
+@keyframes ia-bounce{0%,100%{transform:none}30%{transform:translateY(-6px) scale(1.15)}55%{transform:translateY(1px) scale(.95)}}
+@keyframes ia-wiggle{0%,100%{transform:none}20%{transform:rotate(-16deg)}40%{transform:rotate(14deg)}60%{transform:rotate(-9deg)}80%{transform:rotate(5deg)}}
+@keyframes ia-pop{0%,100%{transform:none}40%{transform:scale(1.35) rotate(-10deg)}70%{transform:scale(.92) rotate(4deg)}}
+@keyframes ia-spin{to{transform:rotate(360deg)}}
+@keyframes ia-fly{0%{transform:none}40%{transform:translate(9px,-9px);opacity:0}41%{transform:translate(-9px,9px);opacity:0}100%{transform:none;opacity:1}}
+@keyframes ia-nudge{0%,100%{transform:none}50%{transform:translateX(5px)}}
+@keyframes ia-down{0%,100%{transform:none}50%{transform:translateY(5px)}}
+@keyframes ia-sway{0%,100%{transform:none}25%{transform:translateY(-4px) rotate(-12deg)}75%{transform:translateY(-2px) rotate(12deg)}}
+@keyframes ia-flash{0%,100%{transform:none;filter:none}35%{transform:scale(1.3);filter:brightness(2)}60%{transform:scale(.95)}}
+@keyframes ia-ring{0%,100%{transform:none}10%,30%,50%{transform:rotate(-14deg)}20%,40%,60%{transform:rotate(14deg)}70%{transform:none}}
+:is(a,button):is(:hover,:active) .fa-house,.dock a.on .fa-house{animation:ia-bounce .8s var(--e)}
+:is(a,button):is(:hover,:active) .fa-user,.dock a.on .fa-user{animation:ia-wiggle .8s var(--e)}
+:is(a,button):is(:hover,:active) .fa-briefcase,.dock a.on .fa-briefcase{animation:ia-wiggle .7s var(--e)}
+:is(a,button):is(:hover,:active) :is(.fa-music,.fa-spotify),.dock a.on .fa-music{animation:ia-sway .9s ease-in-out}
+:is(a,button):is(:hover,:active) :is(.fa-camera-retro,.fa-camera),.dock a.on .fa-camera-retro{animation:ia-flash .7s var(--e)}
+:is(a,button):is(:hover,:active) :is(.fa-paper-plane,.fa-telegram),.dock a.on .fa-paper-plane{animation:ia-fly .8s var(--e)}
+:is(a,button):is(:hover,:active) .fa-arrow-right{animation:ia-nudge .9s ease-in-out infinite}
+:is(a,button):is(:hover,:active) :is(.fa-download,.fa-file-arrow-down){animation:ia-down .8s ease-in-out infinite}
+:is(a,button):is(:hover,:active) .fa-globe{animation:ia-spin 1.2s var(--e)}
+:is(a,button):is(:hover,:active) :is(.fa-instagram,.fa-envelope,.fa-reddit-alien,.fa-x-twitter,.fa-facebook-f,.fa-arrow-up-right-from-square){animation:ia-pop .7s var(--e)}
+:is(a,button):is(:hover,:active) :is(.fa-github,.fa-whatsapp){animation:ia-ring .8s ease-in-out}
+
+/* custom cursor (mouse only) */
+@media(hover:hover) and (pointer:fine){
+ html.cur-on,html.cur-on *{cursor:none!important}
+ #cur{position:fixed;left:0;top:0;z-index:100000;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;pointer-events:none;border:1.5px solid rgba(255,255,255,.65);background:rgba(255,255,255,.04);box-shadow:0 0 0 1px rgba(0,0,0,.25),inset 0 0 12px rgba(255,255,255,.06);opacity:0;transition:width .35s var(--e),height .35s var(--e),margin .35s var(--e),background .3s,border-color .3s,opacity .3s}
+ #cur.on{opacity:1}
+ #cur.hot{width:62px;height:62px;margin:-31px 0 0 -31px;border-color:var(--a);background:rgba(212,255,58,.12)}
+ #cur.down{width:24px;height:24px;margin:-12px 0 0 -12px;background:rgba(212,255,58,.3)}
+}
+@media(hover:none),(pointer:coarse){#cur{display:none}}
+@media(prefers-reduced-motion:reduce){:is(a,button) i{animation:none!important}.rp{display:none}#cur{display:none}}
 /* ---- laptops & desktops ---- */
 @media(max-height:700px){.page{gap:12px;padding-bottom:98px}.stats div{padding:10px 0}.stats b{font-size:34px}.deck{--s:min(50vw,29dvh,360px)}.trk span{height:38px;font-size:13px}.quote{font-size:19px}}
 @media(min-width:900px){

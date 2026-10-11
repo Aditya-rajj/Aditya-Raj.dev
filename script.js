@@ -28,7 +28,7 @@ const R={
   [['Instagram','instagram'],['GitHub','github']].forEach(([l,k])=>{const x=DATA.socials.find(v=>v.icon===k&&v.link),a=$(`.cta a[aria-label="${l}"]`);if(x&&a)a.href=safe(x.link)})},
  about(){const a=DATA.about,st=$('.stats');
   $('#about .big').innerHTML=em(a.heading);$('.quote').innerHTML='“'+em(a.quote)+'”';
-  st.style.gridTemplateColumns=`repeat(${a.stats.length||1},1fr)`;st.innerHTML=a.stats.map(s=>`<div><b data-n="${+s.n||0}">0</b><span>${esc(s.label)}</span></div>`).join('');
+  st.style.gridTemplateColumns=`repeat(${a.stats.length||1},1fr)`;st.innerHTML=a.stats.map(s=>`<div><b data-n="${statVal(s,DATA.projects.length)}">0</b><span>${esc(s.label)}</span></div>`).join('');
   const t=$$('.trk');t[0].innerHTML=pills(a.dev);t[1].innerHTML=pills(a.creative);t.forEach(x=>x.innerHTML+=x.innerHTML);$('#about .btn').href=safe(a.resume)},
  work(){$('.rail').innerHTML=DATA.projects.map((p,i)=>`<a class="card" href="${esc(safe(p.url))}" target="_blank" rel="noopener"><img src="${esc(cdn(p.image,700))}" alt="" loading="lazy"><span class="n">${String(i+1).padStart(2,'0')}</span><div><span><h3>${esc(p.title)}</h3><p>Open project</p></span><i class="fa-solid fa-arrow-right"></i></div></a>`).join('')},
  frames(){const L=DATA.photos.list,P=L&&L.length?L:DEFAULTS.photos.list;
@@ -80,13 +80,35 @@ if(lg){
 
 
 /* Start: the JS-built sections first, then your saved cloud content (cached copy at once, fresh copy right after) */
-R.frames();R.talk();R.music();
-const apply=c=>{if(!c)return;Object.keys(DEFAULTS).forEach(k=>{if(c[k]!==undefined)DATA[k]=Array.isArray(DEFAULTS[k])?c[k]:Object.assign({},DEFAULTS[k],c[k])});renderAll()};
+R.frames();R.talk();R.music();R.about();
+const apply=c=>{if(!c)return;fixStats(c);Object.keys(DEFAULTS).forEach(k=>{if(c[k]!==undefined)DATA[k]=Array.isArray(DEFAULTS[k])?c[k]:Object.assign({},DEFAULTS[k],c[k])});renderAll()};
 try{apply(JSON.parse(localStorage.getItem('pf-content')))}catch(e){}
 /* Add ?debug to your site address to see whether the cloud content is loading (and why not) */
 const debugChip=d=>{if(!/[?&#]debug/.test(location.href))return;let c=$('#dbg');if(!c){c=document.createElement('div');c.id='dbg';c.style.cssText='position:fixed;left:10px;bottom:10px;z-index:99999;max-width:92vw;padding:9px 13px;border-radius:14px;font:12px/1.45 system-ui,sans-serif;background:#111;color:#fff;border:1px solid #333';document.body.appendChild(c)}c.style.borderColor=d.ok?'#7be07b':'#ff7a7a';c.textContent=(d.ok?'Cloud OK: ':'Cloud problem: ')+d.msg+(d.updated?' (published '+new Date(d.updated).toLocaleString()+')':'')};
 const sync=()=>fetchContent().then(c=>{if(window.PF_STATUS)debugChip(window.PF_STATUS);if(!c)return;const j=JSON.stringify(c);if(j!==localStorage.getItem('pf-content')){apply(c);try{localStorage.setItem('pf-content',j)}catch(e){}}}).catch(e=>debugChip({ok:false,msg:String(e)}));
 sync();document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});
+
+/* Custom cursor: a transparent ring that follows the mouse and grows over things you can press (mouse only) */
+if(matchMedia('(hover:hover) and (pointer:fine)').matches&&!matchMedia('(prefers-reduced-motion:reduce)').matches){
+ const cur=document.createElement('div');cur.id='cur';document.body.append(cur);document.documentElement.classList.add('cur-on');
+ let x=innerWidth/2,y=innerHeight/2,cx=x,cy=y,run=0;
+ const tick=()=>{cx+=(x-cx)*.22;cy+=(y-cy)*.22;cur.style.transform=`translate3d(${cx}px,${cy}px,0)`;if(Math.abs(x-cx)+Math.abs(y-cy)>.15)requestAnimationFrame(tick);else run=0};
+ addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;x=e.clientX;y=e.clientY;cur.classList.add('on');if(!run){run=1;requestAnimationFrame(tick)}},{passive:true});
+ document.addEventListener('pointerover',e=>cur.classList.toggle('hot',!!(e.target.closest&&e.target.closest('a,button,.card,.lg,[role=tab]'))));
+ addEventListener('pointerdown',()=>cur.classList.add('down'));addEventListener('pointerup',()=>cur.classList.remove('down'));
+ document.documentElement.addEventListener('mouseleave',()=>cur.classList.remove('on'));
+}
+
+/* Ripple on press (mouse + touch) and a glow that follows the pointer, on everything pressable */
+const FX='.btn,.ic,.card,.lg,.tabs button,.rows a,.soc a,.dock a';
+const glow=(t,e)=>{const r=t.getBoundingClientRect();t.style.setProperty('--mx',e.clientX-r.left+'px');t.style.setProperty('--my',e.clientY-r.top+'px');
+ if(!t.matches('.lg')&&!t.querySelector(':scope>.gl'))t.insertAdjacentHTML('afterbegin','<span class="gl"></span>');return r};
+document.addEventListener('pointerdown',e=>{const t=e.target.closest&&e.target.closest(FX);if(!t)return;
+ const r=glow(t,e),d=Math.max(r.width,r.height)*2.2,s=document.createElement('span');
+ s.className='rp';s.style.cssText=`width:${d}px;height:${d}px;left:${e.clientX-r.left-d/2}px;top:${e.clientY-r.top-d/2}px`;
+ t.append(s);s.addEventListener('animationend',()=>s.remove());
+ if(e.pointerType!=='mouse'&&navigator.vibrate)navigator.vibrate(8)},{passive:true});
+document.addEventListener('pointermove',e=>{const t=e.target.closest&&e.target.closest(FX);if(t)glow(t,e)},{passive:true});
 
 /* If an image file is missing, hide it so the placeholder shows instead of a broken icon */
 document.addEventListener('error',e=>{const t=e.target;if(t.tagName==='IMG'){t.classList.add('noimg');t.parentElement.classList.add('noimg')}},true);
