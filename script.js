@@ -5,7 +5,7 @@ const pills = csv => String(csv || '').split(',').map(s => s.trim()).filter(Bool
 
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
 const pages=$$('.page'),links=$$('#dock a'),pill=$('.pill');let cur=0;
-const go=i=>{cur=i;links.forEach((a,k)=>a.classList.toggle('on',k===i));pill.style.width=links[i].offsetWidth+'px';pill.style.transform=`translateX(${links[i].offsetLeft}px)`};
+const go=i=>{const mv=i!==cur;cur=i;links.forEach((a,k)=>a.classList.toggle('on',k===i));pill.style.width=links[i].offsetWidth+'px';pill.style.transform=`translateX(${links[i].offsetLeft}px)`;if(mv){pill.classList.add('mv');clearTimeout(pill._t);pill._t=setTimeout(()=>pill.classList.remove('mv'),450)}};
 const count=p=>$$('[data-n]',p).forEach(b=>{if(b._d)return;b._d=1;const n=+b.dataset.n,t0=performance.now();(function f(t){const k=Math.min(1,(t-t0)/1200);b.textContent=Math.round(n*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(f)})(t0)});
 const io=new IntersectionObserver(es=>es.forEach(e=>{e.target.classList.toggle('in',e.isIntersecting);if(e.isIntersecting){go(pages.indexOf(e.target));count(e.target)}}),{root:$('main'),threshold:.6});
 pages.forEach(p=>io.observe(p));addEventListener('resize',()=>{go(cur);place()});go(0);
@@ -92,7 +92,7 @@ sync();document.addEventListener('visibilitychange',()=>{if(!document.hidden)syn
 if(matchMedia('(hover:hover) and (pointer:fine)').matches&&!matchMedia('(prefers-reduced-motion:reduce)').matches){
  const cur=document.createElement('div');cur.id='cur';document.body.append(cur);document.documentElement.classList.add('cur-on');
  let x=innerWidth/2,y=innerHeight/2,cx=x,cy=y,run=0;
- const tick=()=>{cx+=(x-cx)*.22;cy+=(y-cy)*.22;cur.style.transform=`translate3d(${cx}px,${cy}px,0)`;if(Math.abs(x-cx)+Math.abs(y-cy)>.15)requestAnimationFrame(tick);else run=0};
+ const tick=()=>{cx+=(x-cx)*.14;cy+=(y-cy)*.14;cur.style.transform=`translate3d(${cx}px,${cy}px,0)`;if(Math.abs(x-cx)+Math.abs(y-cy)>.15)requestAnimationFrame(tick);else run=0};
  addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;x=e.clientX;y=e.clientY;cur.classList.add('on');if(!run){run=1;requestAnimationFrame(tick)}},{passive:true});
  document.addEventListener('pointerover',e=>cur.classList.toggle('hot',!!(e.target.closest&&e.target.closest('a,button,.card,.lg,[role=tab]'))));
  addEventListener('pointerdown',()=>cur.classList.add('down'));addEventListener('pointerup',()=>cur.classList.remove('down'));
@@ -100,7 +100,7 @@ if(matchMedia('(hover:hover) and (pointer:fine)').matches&&!matchMedia('(prefers
 }
 
 /* Ripple on press (mouse + touch) and a glow that follows the pointer, on everything pressable */
-const FX='.btn,.ic,.card,.lg,.tabs button,.rows a,.soc a,.dock a';
+const FX='.btn,.ic,.card,.lg,.tabs,.rows a,.soc a,.dock a';
 const glow=(t,e)=>{const r=t.getBoundingClientRect();t.style.setProperty('--mx',e.clientX-r.left+'px');t.style.setProperty('--my',e.clientY-r.top+'px');
  if(!t.matches('.lg')&&!t.querySelector(':scope>.gl'))t.insertAdjacentHTML('afterbegin','<span class="gl"></span>');return r};
 document.addEventListener('pointerdown',e=>{const t=e.target.closest&&e.target.closest(FX);if(!t)return;
