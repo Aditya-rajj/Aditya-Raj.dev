@@ -7,9 +7,9 @@ const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelecto
 const pages=$$('.page'),links=$$('#dock a'),pill=$('.pill');let cur=0;
 const go=i=>{const mv=i!==cur;cur=i;links.forEach((a,k)=>a.classList.toggle('on',k===i));pill.style.width=links[i].offsetWidth+'px';pill.style.transform=`translateX(${links[i].offsetLeft}px)`;if(mv){pill.classList.add('mv');clearTimeout(pill._t);pill._t=setTimeout(()=>pill.classList.remove('mv'),450)}};
 const count=p=>$$('[data-n]',p).forEach(b=>{if(b._d)return;b._d=1;const n=+b.dataset.n,t0=performance.now();(function f(t){const k=Math.min(1,(t-t0)/1200);b.textContent=Math.round(n*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(f)})(t0)});
-const io=new IntersectionObserver(es=>es.forEach(e=>{e.target.classList.toggle('in',e.isIntersecting);if(e.isIntersecting){go(pages.indexOf(e.target));count(e.target)}}),{root:$('main'),threshold:.6});
-pages.forEach(p=>io.observe(p));addEventListener('resize',()=>{go(cur);place()});go(0);
-if(document.fonts)document.fonts.ready.then(()=>{go(cur);place()});
+let lockNav=false;const io=new IntersectionObserver(es=>es.forEach(e=>{e.target.classList.toggle('in',e.isIntersecting);if(e.isIntersecting){if(!lockNav)go(pages.indexOf(e.target));count(e.target);if(e.target.id==='talk')place(1)}}),{root:$('main'),threshold:.6});
+pages.forEach(p=>io.observe(p));addEventListener('resize',()=>{go(cur);place(1)});go(0);
+if(document.fonts)document.fonts.ready.then(()=>{go(cur);place(1)});
 
 /* About: duplicate each skills row so the loop is seamless */
 $$('.trk').forEach(t=>t.innerHTML+=t.innerHTML);
@@ -18,8 +18,8 @@ $$('.trk').forEach(t=>t.innerHTML+=t.innerHTML);
 /* Renderers: each one redraws a part of the page from DATA (static HTML stays as the fallback if the cloud is empty or offline) */
 const AR=['4/5','1','3/4','5/6'],TT=[44,58,50,54,46],DD=[-8,-24,-15,-33,-4];
 let tbs=[],tn=0,cats=[];
-const place=()=>{const b=tbs[tn],tp=$('.tp');if(!b||!tp)return;tp.style.width=b.offsetWidth+'px';tp.style.transform=`translateX(${b.offsetLeft}px)`};
-const pick=n=>{tn=n;tbs.forEach((b,k)=>{b.classList.toggle('on',k===n);b.setAttribute('aria-selected',k===n)});place();
+const place=snap=>{const b=tbs[tn],tp=$('.tp');if(!b||!tp)return;if(snap)tp.style.transition='none';tp.style.width=b.offsetWidth+'px';tp.style.transform=`translateX(${b.offsetLeft}px)`;if(snap){void tp.offsetWidth;tp.style.transition=''}};
+const pick=(n,snap)=>{tn=n;tbs.forEach((b,k)=>{b.classList.toggle('on',k===n);b.setAttribute('aria-selected',k===n)});place(snap);
  $('#rows').innerHTML=DATA.contacts.filter(c=>c.cat===cats[n]).map((c,k)=>`<a style="--k:${k}" href="${esc(safe(c.link))}"${/^https?:/.test(c.link||'')?' target="_blank" rel="noopener"':''}${c.icon==='resume'?' download':''}><i class="l ${(ICONS[c.icon]||ICONS.link)[0]}"></i><span>${esc(c.title)}<small>${esc(c.note)}</small></span><i class="ar fa-solid fa-arrow-up-right-from-square"></i></a>`).join('')};
 const R={
  hero(){const h=DATA.hero,i=$('.arch img');
@@ -36,7 +36,7 @@ const R={
   $('#insta').href=safe(DATA.photos.instagram)},
  music(){$('#spot').href=safe(DATA.music.spotify);$('#web').href=safe(DATA.music.website);loadSongs()},
  talk(){cats=[...new Set(DATA.contacts.map(c=>c.cat))];const tabs=$('#tabs');tn=Math.min(tn,Math.max(cats.length-1,0));
-  tabs.innerHTML='<b class="tp"></b>'+cats.map(c=>`<button role="tab">${esc(c)}</button>`).join('');tbs=$$('button',tabs);tbs.forEach((b,k)=>b.onclick=()=>pick(k));pick(tn);
+  tabs.innerHTML='<b class="tp"></b>'+cats.map(c=>`<button role="tab">${esc(c)}</button>`).join('');tbs=$$('button',tabs);tbs.forEach((b,k)=>b.onclick=()=>pick(k));pick(tn,1);
   $('#soc').innerHTML=DATA.socials.map(s=>{const i=(ICONS[s.icon]||ICONS.link)[0];return s.link?`<a href="${esc(safe(s.link))}" target="_blank" rel="noopener" aria-label="${esc(s.title)}"><i class="${i}"></i></a>`:`<span title="Link coming soon" aria-label="${esc(s.title)} (coming soon)"><i class="${i}"></i></span>`}).join('')}
 };
 const renderAll=()=>Object.entries(R).forEach(([k,f])=>{try{f()}catch(e){console.warn('[portfolio] section failed:',k,e)}});
@@ -86,7 +86,41 @@ try{apply(JSON.parse(localStorage.getItem('pf-content')))}catch(e){}
 /* Add ?debug to your site address to see whether the cloud content is loading (and why not) */
 const debugChip=d=>{if(!/[?&#]debug/.test(location.href))return;let c=$('#dbg');if(!c){c=document.createElement('div');c.id='dbg';c.style.cssText='position:fixed;left:10px;bottom:10px;z-index:99999;max-width:92vw;padding:9px 13px;border-radius:14px;font:12px/1.45 system-ui,sans-serif;background:#111;color:#fff;border:1px solid #333';document.body.appendChild(c)}c.style.borderColor=d.ok?'#7be07b':'#ff7a7a';c.textContent=(d.ok?'Cloud OK: ':'Cloud problem: ')+d.msg+(d.updated?' (published '+new Date(d.updated).toLocaleString()+')':'')};
 const sync=()=>fetchContent().then(c=>{if(window.PF_STATUS)debugChip(window.PF_STATUS);if(!c)return;const j=JSON.stringify(c);if(j!==localStorage.getItem('pf-content')){apply(c);try{localStorage.setItem('pf-content',j)}catch(e){}}}).catch(e=>debugChip({ok:false,msg:String(e)}));
-sync();document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});
+const first=sync();document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});
+
+/* Desktop: glide from page to page with the mouse wheel, keys and the navbar (phones keep their own snap scrolling) */
+const mainEl=$('main'),idx=()=>Math.round(mainEl.scrollTop/mainEl.clientHeight),still=matchMedia('(prefers-reduced-motion:reduce)').matches;
+const desk=matchMedia('(hover:hover) and (pointer:fine)').matches&&!matchMedia('(max-height:560px)').matches;
+let gliding=false,lastWheel=0;
+const glideTo=i=>{i=Math.max(0,Math.min(pages.length-1,i));const from=mainEl.scrollTop,to=pages[i].getBoundingClientRect().top-mainEl.getBoundingClientRect().top+from;
+ lockNav=true;go(i);if(still||Math.abs(to-from)<2){mainEl.scrollTop=to;lockNav=false;return}
+ gliding=true;const dur=Math.min(1500,800+Math.abs(i-idx())*150),t0=performance.now();
+ const step=t=>{const k=Math.min(1,(t-t0)/dur),e=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;mainEl.scrollTop=from+(to-from)*e;
+  if(k<1)requestAnimationFrame(step);else{gliding=false;lockNav=false;go(idx())}};requestAnimationFrame(step)};
+if(desk){
+ document.documentElement.classList.add('glide');
+ document.addEventListener('wheel',e=>{if(e.ctrlKey)return;e.preventDefault();const n=performance.now(),quiet=n-lastWheel>140;lastWheel=n;if(gliding||!quiet||Math.abs(e.deltaY)<6)return;glideTo(idx()+(e.deltaY>0?1:-1))},{passive:false});
+ addEventListener('keydown',e=>{if(e.altKey||e.ctrlKey||e.metaKey||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
+  const d={ArrowDown:1,PageDown:1,' ':e.shiftKey?-1:1,ArrowUp:-1,PageUp:-1}[e.key];
+  if(d){e.preventDefault();if(!gliding)glideTo(idx()+d)}else if(e.key==='Home'||e.key==='End'){e.preventDefault();if(!gliding)glideTo(e.key==='Home'?0:pages.length-1)}});
+}
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[href^="#"]');if(!a)return;const p=document.getElementById(a.getAttribute('href').slice(1));if(!p||!p.classList.contains('page'))return;
+ const i=pages.indexOf(p);if(desk){e.preventDefault();if(!gliding)glideTo(i)}else{lockNav=true;go(i);setTimeout(()=>{lockNav=false;go(idx())},700+Math.abs(i-idx())*200)}});
+
+/* Loading: the intro waits for your content, fonts and images (7 s at most), then reveals the site */
+(()=>{
+ const sleep=ms=>new Promise(r=>setTimeout(r,ms)),ok=p=>Promise.resolve(p).then(()=>0,()=>0);
+ const pic=i=>{i.loading='eager';return i.decode?i.decode().catch(()=>0):new Promise(r=>{if(i.complete)r();else i.onload=i.onerror=r})};
+ let shown=false;
+ const reveal=()=>{if(shown)return;shown=true;const n=$('#in');document.documentElement.classList.add('ready');
+  if(n){n.classList.add('go');n.addEventListener('animationend',e=>{if(e.animationName==='fo')n.remove()});setTimeout(()=>n.remove(),2600)}};
+ (async()=>{
+  await Promise.race([ok(first),sleep(3500)]);
+  await Promise.race([Promise.all([ok(document.fonts&&document.fonts.ready),...$$('img[src]').map(i=>ok(pic(i)))]),sleep(5000)]);
+  await sleep(Math.max(0,2300-performance.now()));
+  reveal()})();
+ setTimeout(reveal,7500);
+})();
 
 /* Custom cursor: a transparent ring that follows the mouse and grows over things you can press (mouse only) */
 if(matchMedia('(hover:hover) and (pointer:fine)').matches&&!matchMedia('(prefers-reduced-motion:reduce)').matches){
