@@ -21,6 +21,9 @@ let tbs=[],tn=0,cats=[];
 const place=snap=>{const b=tbs[tn],tp=$('.tp');if(!b||!tp)return;if(snap)tp.style.transition='none';tp.style.width=b.offsetWidth+'px';tp.style.transform=`translateX(${b.offsetLeft}px)`;if(snap){void tp.offsetWidth;tp.style.transition=''}};
 const pick=(n,snap)=>{tn=n;tbs.forEach((b,k)=>{b.classList.toggle('on',k===n);b.setAttribute('aria-selected',k===n)});place(snap);
  $('#rows').innerHTML=DATA.contacts.filter(c=>c.cat===cats[n]).map((c,k)=>`<a style="--k:${k}" href="${esc(safe(c.link))}"${/^https?:/.test(c.link||'')?' target="_blank" rel="noopener"':''}${c.icon==='resume'?' download':''}><i class="l ${(ICONS[c.icon]||ICONS.link)[0]}"></i><span>${esc(c.title)}<small>${esc(c.note)}</small></span><i class="ar fa-solid fa-arrow-up-right-from-square"></i></a>`).join('')};
+const arrows=()=>$$('#work .grp2').forEach(g=>{const r=$('.rail',g),a=$('.arr',g);if(a&&r)a.hidden=r.scrollWidth<=r.clientWidth+4});
+$$('#work .arr button').forEach(b=>b.onclick=()=>{const r=b.closest('.grp2').querySelector('.rail');r.scrollBy({left:(b.dataset.d==='1'?1:-1)*r.clientWidth*.8,behavior:'smooth'})});
+addEventListener('resize',arrows);
 const R={
  hero(){const h=DATA.hero,i=$('.arch img');
   if(h.image){i.classList.remove('noimg');i.parentElement.classList.remove('noimg');i.src=cdn(h.image,900)}
@@ -30,7 +33,13 @@ const R={
   $('#about .big').innerHTML=em(a.heading);$('.quote').innerHTML='“'+em(a.quote)+'”';
   st.style.gridTemplateColumns=`repeat(${a.stats.length||1},1fr)`;st.innerHTML=a.stats.map(s=>`<div><b data-n="${statVal(s,DATA.projects.length)}">0</b><span>${esc(s.label)}</span></div>`).join('');
   const t=$$('.trk');t[0].innerHTML=pills(a.dev);t[1].innerHTML=pills(a.creative);t.forEach(x=>x.innerHTML+=x.innerHTML);$('#about .btn').href=safe(a.resume)},
- work(){$('.rail').innerHTML=DATA.projects.map((p,i)=>`<a class="card" href="${esc(safe(p.url))}" target="_blank" rel="noopener"><img src="${esc(cdn(p.image,700))}" alt="" loading="lazy"><span class="n">${String(i+1).padStart(2,'0')}</span><div><span><h3>${esc(p.title)}</h3><p>Open project</p></span><i class="fa-solid fa-arrow-right"></i></div></a>`).join('')},
+ work(){const AR={wide:'16/9',square:'1/1',portrait:'3/4'},C=DATA.creative||[];
+  const card=(p,d)=>{const fit=p.fit==='contain',at=`class="card${fit?' fit':''}" style="--ar:${AR[p.shape]||d}"`,
+   body=`<img src="${esc(cdn(p.image,800))}" alt="" loading="lazy">${p.tag?`<span class="tg">${esc(p.tag)}</span>`:''}<div><span><h3>${esc(p.title)}</h3></span><i class="fa-solid fa-arrow-right"></i></div>`;
+   return p.url?`<a ${at} href="${esc(safe(p.url))}" target="_blank" rel="noopener">${body}</a>`:`<div ${at} role="button" tabindex="0" data-img="${esc(cdn(p.image,1400))}" aria-label="View ${esc(p.title)}">${body}</div>`};
+  $('#rail1').innerHTML=DATA.projects.map(p=>card(p,'16/9')).join('');$('#rail2').innerHTML=C.map(p=>card(p,'1/1')).join('');
+  $('#w2').hidden=!C.length;$('#n1').textContent=String(DATA.projects.length).padStart(2,'0');$('#n2').textContent=String(C.length).padStart(2,'0');
+  $('#work').style.setProperty('--rows',C.length?2:1);arrows()},
  frames(){const L=DATA.photos.list,P=L&&L.length?L:DEFAULTS.photos.list;
   $('#cols').innerHTML=[0,1,2,3,4].map(k=>{const set=[0,1,2].map(j=>`<img src="${esc(cdn(P[(k+2*j)%P.length],500))}" alt="" style="aspect-ratio:${AR[(k+j)%4]}">`).join('');return `<div class="col" style="--t:${TT[k]}s;--d:${DD[k]}s">${set}${set}</div>`}).join('');
   $('#insta').href=safe(DATA.photos.instagram)},
@@ -80,7 +89,7 @@ if(lg){
 
 
 /* Start: the JS-built sections first, then your saved cloud content (cached copy at once, fresh copy right after) */
-R.frames();R.talk();R.music();R.about();
+R.frames();R.talk();R.music();R.about();R.work();
 const apply=c=>{if(!c)return;fixStats(c);Object.keys(DEFAULTS).forEach(k=>{if(c[k]!==undefined)DATA[k]=Array.isArray(DEFAULTS[k])?c[k]:Object.assign({},DEFAULTS[k],c[k])});renderAll()};
 try{apply(JSON.parse(localStorage.getItem('pf-content')))}catch(e){}
 /* Add ?debug to your site address to see whether the cloud content is loading (and why not) */
@@ -99,7 +108,7 @@ const glideTo=i=>{i=Math.max(0,Math.min(pages.length-1,i));const from=mainEl.scr
   if(k<1)requestAnimationFrame(step);else{gliding=false;lockNav=false;go(idx())}};requestAnimationFrame(step)};
 if(desk){
  document.documentElement.classList.add('glide');
- document.addEventListener('wheel',e=>{if(e.ctrlKey)return;e.preventDefault();const n=performance.now(),quiet=n-lastWheel>140;lastWheel=n;if(gliding||!quiet||Math.abs(e.deltaY)<6)return;glideTo(idx()+(e.deltaY>0?1:-1))},{passive:false});
+ document.addEventListener('wheel',e=>{if(e.ctrlKey||Math.abs(e.deltaX)>Math.abs(e.deltaY))return;e.preventDefault();const n=performance.now(),quiet=n-lastWheel>140;lastWheel=n;if(gliding||!quiet||Math.abs(e.deltaY)<6)return;glideTo(idx()+(e.deltaY>0?1:-1))},{passive:false});
  addEventListener('keydown',e=>{if(e.altKey||e.ctrlKey||e.metaKey||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
   const d={ArrowDown:1,PageDown:1,' ':e.shiftKey?-1:1,ArrowUp:-1,PageUp:-1}[e.key];
   if(d){e.preventDefault();if(!gliding)glideTo(idx()+d)}else if(e.key==='Home'||e.key==='End'){e.preventDefault();if(!gliding)glideTo(e.key==='Home'?0:pages.length-1)}});
@@ -121,6 +130,11 @@ document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest
   reveal()})();
  setTimeout(reveal,7500);
 })();
+
+/* Creativity pieces without a link open the picture full size */
+const lb=$('#lb');
+document.addEventListener('click',e=>{const c=e.target.closest&&e.target.closest('.card[data-img]');if(c){$('img',lb).src=c.dataset.img;lb.classList.add('on');return}if(lb.classList.contains('on')&&e.target.closest&&e.target.closest('#lb'))lb.classList.remove('on')});
+addEventListener('keydown',e=>{if(e.key==='Escape')lb.classList.remove('on');const a=document.activeElement;if(e.key==='Enter'&&a&&a.matches&&a.matches('.card[data-img]'))a.click()});
 
 /* Custom cursor: a transparent ring that follows the mouse and grows over things you can press (mouse only) */
 if(matchMedia('(hover:hover) and (pointer:fine)').matches&&!matchMedia('(prefers-reduced-motion:reduce)').matches){

@@ -25,11 +25,12 @@ const DEFAULTS = {
     resume: 'assets/resume.pdf'
   },
   projects: [
-    { title: 'Hunter Digit', url: 'https://hunterdigit-github-io.vercel.app/index.html', image: 'assets/projects/hunter-digit.png' },
-    { title: 'QR Studio', url: 'https://qr-studio-github-io.vercel.app/', image: 'assets/projects/qr-studio.jpg' },
-    { title: 'Resize Studio', url: 'https://resize-studio-github-io.vercel.app/', image: 'assets/projects/resize-studio.jpg' },
-    { title: 'Broken Melodies', url: 'https://broken-melodies.vercel.app/', image: 'assets/projects/broken-melodies.png' }
+    { title: 'Hunter Digit', url: 'https://hunterdigit-github-io.vercel.app/index.html', image: 'assets/projects/hunter-digit.png', tag: 'Web app', shape: 'wide', fit: 'cover' },
+    { title: 'QR Studio', url: 'https://qr-studio-github-io.vercel.app/', image: 'assets/projects/qr-studio.jpg', tag: 'Web tool', shape: 'wide', fit: 'cover' },
+    { title: 'Resize Studio', url: 'https://resize-studio-github-io.vercel.app/', image: 'assets/projects/resize-studio.jpg', tag: 'Web tool', shape: 'wide', fit: 'cover' },
+    { title: 'Broken Melodies', url: 'https://broken-melodies.vercel.app/', image: 'assets/projects/broken-melodies.png', tag: 'Music site', shape: 'wide', fit: 'cover' }
   ],
+  creative: [],
   photos: {
     list: [
       'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=500&auto=format&fit=crop',

@@ -227,6 +227,32 @@ html.glide main{scroll-snap-type:none;scroll-behavior:auto}
  #cur.hot{width:42px;height:42px;margin:-21px 0 0 -21px;border-color:rgba(212,255,58,.5);background:linear-gradient(135deg,rgba(212,255,58,.14),rgba(255,255,255,.03) 55%,rgba(255,255,255,.08))}
  #cur.down{width:24px;height:24px;margin:-12px 0 0 -12px;background:linear-gradient(135deg,rgba(212,255,58,.22),rgba(255,255,255,.05))}
 }
+/* ===== work: projects + creativity on one page (cards share one height, so any shape fits) ===== */
+#work{--ch:clamp(100px,calc((100dvh - var(--fx,205px) - 50px*var(--rows,2)) / var(--rows,2)),var(--chmax,160px))}
+@media(min-width:600px){#work{--chmax:200px}}
+.grp2{display:grid;gap:10px;min-width:0}.grp2[hidden]{display:none}
+.gh{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.gh h3{display:flex;align-items:center;gap:9px;font:600 13px 'Space Grotesk',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#d8d8d1}
+.gh h3 i{color:var(--a);font-size:13px}.gh small{color:var(--mut);font-weight:500;letter-spacing:.1em}
+.arr{display:none;gap:8px}
+@media(hover:hover) and (pointer:fine){.arr{display:flex}.arr[hidden]{display:none}}
+.arr button{width:34px;height:34px;display:grid;place-items:center;border-radius:50%;background:#101010;border:1px solid #262626;color:#cfcfc8;font-size:12px;cursor:pointer;transition:background .5s var(--soft),color .4s var(--soft),border-color .5s var(--soft)}
+.arr button:hover{background:var(--a);color:#000;border-color:var(--a)}
+.rail{margin:-10px -20px -14px;padding:10px 20px 14px;gap:14px;scroll-padding-inline:20px}
+.card{flex:none;width:auto;max-width:none;height:var(--ch);aspect-ratio:var(--ar,16/9);border-radius:22px;scroll-snap-align:start;display:block}
+.card img{transition:transform 1.2s var(--soft)}
+.card .tg{position:absolute;z-index:2;top:10px;left:12px;padding:5px 10px;border-radius:99px;font:600 10px/1 'Space Grotesk',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#fff;background:rgba(0,0,0,.42);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.16)}
+.card div{left:14px;right:10px;bottom:10px}
+.card h3{font-size:clamp(18px,3.2dvh,24px)}
+.card i{width:34px;height:34px;font-size:13px}
+.card.fit img{inset:10px 10px 50px;width:calc(100% - 20px);height:calc(100% - 60px);object-fit:contain;border-radius:14px}
+.card.fit:after{display:none}
+.card[role=button]{cursor:pointer}
+/* picture viewer for creativity pieces without a link */
+#lb{position:fixed;inset:0;z-index:99990;display:grid;place-items:center;padding:24px;background:rgba(0,0,0,.88);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);opacity:0;visibility:hidden;transition:opacity .5s var(--soft),visibility .5s}
+#lb.on{opacity:1;visibility:visible}
+#lb img{max-width:100%;max-height:100%;border-radius:18px;box-shadow:0 30px 80px -20px #000;transform:scale(.95);transition:transform .7s var(--soft)}
+#lb.on img{transform:none}
 /* ---- laptops & desktops ---- */
 @media(max-height:700px){.page{gap:12px;padding-bottom:98px}.stats div{padding:10px 0}.stats b{font-size:34px}.deck{--s:min(50vw,29dvh,360px)}.trk span{height:38px;font-size:13px}.quote{font-size:19px}}
 @media(min-width:900px){
@@ -242,8 +268,8 @@ body{font-size:16px}
 #about{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto 1fr auto auto auto auto 1fr;grid-template-areas:"lab lab" ". sk" "h sk" "q sk" "st sk" "btn sk" ". sk"}
 #about .lab{grid-area:lab}#about .big{grid-area:h;font-size:clamp(44px,min(5vw,9dvh),96px)}#about .quote{grid-area:q;font-size:clamp(22px,3.4dvh,32px)}#about .stats{grid-area:st}#about .sk{grid-area:sk;align-self:center;gap:12px}#about .btn{grid-area:btn;justify-self:start;width:min(100%,340px)}
 .sk h4{font-size:11px}.mq{margin:0}.trk span{height:50px;padding:0 22px;font-size:16px}
-.rail{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible;margin:0;padding:0;gap:18px}
-.card{max-width:none;height:min(58dvh,560px)}#work .lab span:last-child{display:none}
+#work{--fx:290px;--chmax:230px}.rail{gap:18px}
+#work .lab span:last-child{display:none}
 #sound{grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);grid-template-rows:auto 1fr auto auto auto auto auto 1fr;grid-template-areas:"lab lab" ". stage" "h stage" "now stage" "prog stage" "thumbs stage" "cta stage" ". stage"}
 #sound .lab{grid-area:lab}#sound .big{grid-area:h}#sound .stage{grid-area:stage}#sound .now{grid-area:now}#sound .prog{grid-area:prog;max-width:420px}#sound .thumbs{grid-area:thumbs;justify-content:flex-start}#sound .cta{grid-area:cta;max-width:420px}
 .deck{--s:min(32vw,56dvh,520px)}.now h3{font-size:clamp(34px,6dvh,56px)}.thumbs button{width:64px;height:64px}

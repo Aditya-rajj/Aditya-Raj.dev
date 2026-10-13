@@ -15,6 +15,11 @@ const KI = { image: 'fa-solid fa-image', status: 'fa-solid fa-circle-dot', line1
 const ico = k => `<i class="${(ICONS[k] || ICONS.link)[0]}"></i>`;
 
 const NOTE = '<div class="note"><i class="fa-solid fa-triangle-exclamation"></i><div><b>One-time setup for image uploads</b><p>Cloudinary needs an <em>unsigned upload preset</em>. In Cloudinary: Settings (gear) &rarr; Upload &rarr; Upload presets &rarr; Add upload preset &rarr; Signing mode: Unsigned &rarr; Save. Then paste its name into <code>cloud-config.js</code> as <code>uploadPreset</code>.</p></div></div>';
+const WH = it => ({ t: it.image ? `<img src="${esc(cdn(it.image, 100))}" alt="">` : '<i class="fa-regular fa-image"></i>', a: it.title, b: [it.tag, it.url].filter(Boolean).join(' · ') });
+const WF = [F('text', 'title', 'Title'), F('text', 'tag', 'Label', { ic: 'fa-solid fa-tag', hint: 'Short word on the card, for example Book, Poster, App.' }),
+  F('text', 'url', 'Link', { hint: 'Leave empty to open the picture full size when it is tapped.' }), F('img', 'image', 'Cover image', { max: 1400 }),
+  F('sel', 'shape', 'Card shape', { ic: 'fa-solid fa-crop-simple', opts: { wide: ['', 'Wide (16:9): websites and apps'], square: ['', 'Square (1:1): designs and posters'], portrait: ['', 'Portrait (3:4): book covers'] } }),
+  F('sel', 'fit', 'Picture fit', { ic: 'fa-solid fa-expand', opts: { cover: ['', 'Fill the card (may crop the edges)'], contain: ['', 'Show the whole picture'] } })];
 /* What can be edited. sub = which part of the data a section edits. */
 const SECTIONS = {
   Hero: { i: 'fa-house', d: 'The first screen of your site', sub: 'hero', fields: [F('img', 'image', 'Hero photo', { max: 1400 }), F('text', 'status', 'Status line (top right)'), F('text', 'line1', 'Name, first line'), F('text', 'line2', 'Name, second line'), F('area', 'tagline', 'Tagline', { hint: 'Wrap a word in *stars* to make it italic serif.' })] },
@@ -27,8 +32,9 @@ const SECTIONS = {
         F('month', 'since', 'Since (month and year)', { when: ['auto', 'years'], ic: 'fa-regular fa-calendar', hint: 'The number goes up by itself every year on this month.' }),
         F('num', 'base', 'Other projects not listed here', { when: ['auto', 'projects'], ic: 'fa-solid fa-plus', hint: 'Total shown = this number + the projects you list in the Projects tab.' })] }),
     F('area', 'dev', 'Development & design skills', { hint: 'Comma separated.' }), F('area', 'creative', 'Creative skills', { hint: 'Comma separated.' }), F('file', 'resume', 'Resume (PDF)')] },
-  Projects: { i: 'fa-briefcase', d: 'The cards on the Work page', fields: [F('list', 'projects', 'Projects', { noun: 'project', add: { title: 'New project', url: 'https://', image: '' },
-    head: it => ({ t: it.image ? `<img src="${esc(cdn(it.image, 100))}" alt="">` : '<i class="fa-regular fa-image"></i>', a: it.title, b: it.url }), fields: [F('text', 'title', 'Title'), F('text', 'url', 'Link'), F('img', 'image', 'Cover image', { max: 1200 })] })] },
+  Work: { i: 'fa-briefcase', d: 'Projects and creative work on the Work page', fields: [
+    F('list', 'projects', 'Projects (apps, websites)', { noun: 'project', add: { title: 'New project', tag: 'Web app', url: 'https://', image: '', shape: 'wide', fit: 'cover' }, head: WH, fields: WF }),
+    F('list', 'creative', 'Creativity (books, designs, anything else)', { noun: 'creative piece', add: { title: 'New piece', tag: 'Book', url: '', image: '', shape: 'square', fit: 'cover' }, head: WH, fields: WF })] },
   Photos: { i: 'fa-camera-retro', d: 'Photos that rise on the Frames page', sub: 'photos', fields: [F('imgs', 'list', 'Photography', { hint: 'Add as many as you like. They are optimised for you.' }), F('text', 'instagram', 'Instagram link')] },
   Music: { i: 'fa-music', d: 'Links used on the Sound page', sub: 'music', fields: [F('text', 'spotify', 'Spotify artist link'), F('text', 'website', 'Music website link'), F('text', 'feed', 'Songs feed link (songs.json)')] },
   Contact: { i: 'fa-paper-plane', d: 'How people reach you', fields: [
