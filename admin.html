@@ -8,7 +8,7 @@
 <title>Portfolio Manager</title>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-<link rel="stylesheet" href="admin.css?v=8">
+<link rel="stylesheet" href="admin.css?v=9">
 </head>
 <body>
 
@@ -27,6 +27,7 @@
  <header class="top">
   <div class="brand"><i class="fa-solid fa-wand-magic-sparkles"></i><b>Manager</b></div>
   <span id="sync" class="sync ok"><i class="fa-solid fa-circle-check"></i><em>Published</em></span>
+  <button id="pvb" type="button" class="ib" aria-label="Live preview"><i class="fa-regular fa-eye"></i></button>
   <a class="ib" href="index.html" target="_blank" rel="noopener" aria-label="View site"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
   <button id="av" class="av" aria-label="Account menu"><i class="fa-solid fa-user"></i><img alt=""></button>
  </header>
@@ -51,14 +52,20 @@
  <nav id="nav" class="nav" aria-label="Sections"></nav>
 </div>
 
+<div id="pv" class="pv" hidden>
+ <div class="pvh"><b>Live preview</b><span>Your changes show here before you publish</span>
+  <div class="seg2"><button type="button" data-w="390" class="on" aria-label="Phone"><i class="fa-solid fa-mobile-screen"></i></button><button type="button" data-w="0" aria-label="Desktop"><i class="fa-solid fa-desktop"></i></button></div>
+  <button id="pvx" type="button" class="ib sm" aria-label="Close preview"><i class="fa-solid fa-xmark"></i></button></div>
+ <div class="pvf"><iframe id="pvi" title="Preview of your site"></iframe></div>
+</div>
 <datalist id="dl"><option value="Work"><option value="Chat"><option value="Create"></datalist>
 <div id="toast" role="status"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="cloud-config.js?v=8"></script>
-<script src="cloud.js?v=8"></script>
-<script src="admin.js?v=8"></script>
+<script src="cloud-config.js?v=9"></script>
+<script src="cloud.js?v=9"></script>
+<script src="admin.js?v=9"></script>
 </body>
 </html>

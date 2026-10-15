@@ -1,5 +1,7 @@
 /* Aditya Raj, portfolio. Content comes from your Manager page (admin.html); the defaults in cloud.js show until you publish. */
 const DATA = JSON.parse(JSON.stringify(DEFAULTS));
+const PREVIEW = /[?&]preview/.test(location.search);   /* the Manager shows the site in a frame with ?preview */
+if (PREVIEW) { document.documentElement.classList.add('ready', 'pv'); const n0 = document.getElementById('in'); if (n0) n0.remove(); }
 const SKI = { 'html5': 'fa-brands fa-html5', 'css3': 'fa-brands fa-css3-alt', 'javascript': 'fa-brands fa-js', 'python': 'fa-brands fa-python', 'c & c++': 'fa-solid fa-terminal', 'java': 'fa-brands fa-java', 'mysql': 'fa-solid fa-database', 'coraldraw': 'fa-solid fa-pen-nib', 'figma': 'fa-brands fa-figma', 'android dev': 'fa-brands fa-android', 'aosp': 'fa-solid fa-microchip', 'graphic design': 'fa-solid fa-palette', 'ui/ux': 'fa-solid fa-vector-square', 'music production': 'fa-solid fa-sliders', 'photography': 'fa-solid fa-camera', 'cinematography': 'fa-solid fa-film', 'video editing': 'fa-solid fa-scissors' };
 const pills = csv => String(csv || '').split(',').map(s => s.trim()).filter(Boolean).map(n => `<span><i class="${SKI[n.toLowerCase()] || 'fa-solid fa-bolt'}"></i>${esc(n)}</span>`).join('');
 
@@ -33,11 +35,11 @@ const R={
   $('#about .big').innerHTML=em(a.heading);$('.quote').innerHTML='“'+em(a.quote)+'”';
   st.style.gridTemplateColumns=`repeat(${a.stats.length||1},1fr)`;st.innerHTML=a.stats.map(s=>`<div><b data-n="${statVal(s,DATA.projects.length)}">0</b><span>${esc(s.label)}</span></div>`).join('');
   const t=$$('.trk');t[0].innerHTML=pills(a.dev);t[1].innerHTML=pills(a.creative);t.forEach(x=>x.innerHTML+=x.innerHTML);$('#about .btn').href=safe(a.resume)},
- work(){const AR={wide:'16/9',square:'1/1',portrait:'3/4'},C=DATA.creative||[];
-  const card=(p,d)=>{const fit=p.fit==='contain',at=`class="card${fit?' fit':''}" style="--ar:${AR[p.shape]||d}"`,
-   body=`<img src="${esc(cdn(p.image,800))}" alt="" loading="lazy">${p.tag?`<span class="tg">${esc(p.tag)}</span>`:''}<div><span><h3>${esc(p.title)}</h3></span><i class="fa-solid fa-arrow-right"></i></div>`;
+ work(){const AR={wide:['16/9',1.7778],square:['1/1',1],portrait:['3/4',.75]},C=DATA.creative||[];
+  const card=(p,d)=>{const fit=p.fit==='contain',a=AR[p.shape]||AR[d],at=`class="card${fit?' fit':''}" style="--ar:${a[0]};--arn:${a[1]}"`,
+   body=`<img src="${esc(cdn(p.image,800))}" alt="" loading="lazy">${p.tag?`<span class="tg">${esc(p.tag)}</span>`:''}<i class="go fa-solid ${p.url?'fa-arrow-right':'fa-expand'}"></i><h3 class="ct">${esc(p.title)}</h3>`;
    return p.url?`<a ${at} href="${esc(safe(p.url))}" target="_blank" rel="noopener">${body}</a>`:`<div ${at} role="button" tabindex="0" data-img="${esc(cdn(p.image,1400))}" aria-label="View ${esc(p.title)}">${body}</div>`};
-  $('#rail1').innerHTML=DATA.projects.map(p=>card(p,'16/9')).join('');$('#rail2').innerHTML=C.map(p=>card(p,'1/1')).join('');
+  $('#rail1').innerHTML=DATA.projects.map(p=>card(p,'wide')).join('');$('#rail2').innerHTML=C.map(p=>card(p,'square')).join('');
   $('#w2').hidden=!C.length;$('#n1').textContent=String(DATA.projects.length).padStart(2,'0');$('#n2').textContent=String(C.length).padStart(2,'0');
   $('#work').style.setProperty('--rows',C.length?2:1);arrows()},
  frames(){const L=DATA.photos.list,P=L&&L.length?L:DEFAULTS.photos.list;
@@ -48,6 +50,8 @@ const R={
   tabs.innerHTML='<b class="tp"></b>'+cats.map(c=>`<button role="tab">${esc(c)}</button>`).join('');tbs=$$('button',tabs);tbs.forEach((b,k)=>b.onclick=()=>pick(k));pick(tn,1);
   $('#soc').innerHTML=DATA.socials.map(s=>{const i=(ICONS[s.icon]||ICONS.link)[0];return s.link?`<a href="${esc(safe(s.link))}" target="_blank" rel="noopener" aria-label="${esc(s.title)}"><i class="${i}"></i></a>`:`<span title="Link coming soon" aria-label="${esc(s.title)} (coming soon)"><i class="${i}"></i></span>`}).join('')}
 };
+R.seo=()=>{let e=$('#ld');if(!e){e=document.createElement('script');e.id='ld';e.type='application/ld+json';document.head.append(e)}
+ e.textContent=JSON.stringify({'@context':'https://schema.org','@type':'Person',name:DATA.hero.line1+' '+DATA.hero.line2,description:String(DATA.hero.tagline||'').replace(/\*/g,''),url:location.origin+location.pathname,sameAs:DATA.socials.filter(x=>x.link).map(x=>x.link)})};
 const renderAll=()=>Object.entries(R).forEach(([k,f])=>{try{f()}catch(e){console.warn('[portfolio] section failed:',k,e)}});
 
 /* Sound: reads songs.json from your music site, falls back to this list */
@@ -89,13 +93,17 @@ if(lg){
 
 
 /* Start: the JS-built sections first, then your saved cloud content (cached copy at once, fresh copy right after) */
-R.frames();R.talk();R.music();R.about();R.work();
+R.frames();R.talk();R.music();R.about();R.work();R.seo();
 const apply=c=>{if(!c)return;fixStats(c);Object.keys(DEFAULTS).forEach(k=>{if(c[k]!==undefined)DATA[k]=Array.isArray(DEFAULTS[k])?c[k]:Object.assign({},DEFAULTS[k],c[k])});renderAll()};
-try{apply(JSON.parse(localStorage.getItem('pf-content')))}catch(e){}
+if(!PREVIEW)try{apply(JSON.parse(localStorage.getItem('pf-content')))}catch(e){}
 /* Add ?debug to your site address to see whether the cloud content is loading (and why not) */
 const debugChip=d=>{if(!/[?&#]debug/.test(location.href))return;let c=$('#dbg');if(!c){c=document.createElement('div');c.id='dbg';c.style.cssText='position:fixed;left:10px;bottom:10px;z-index:99999;max-width:92vw;padding:9px 13px;border-radius:14px;font:12px/1.45 system-ui,sans-serif;background:#111;color:#fff;border:1px solid #333';document.body.appendChild(c)}c.style.borderColor=d.ok?'#7be07b':'#ff7a7a';c.textContent=(d.ok?'Cloud OK: ':'Cloud problem: ')+d.msg+(d.updated?' (published '+new Date(d.updated).toLocaleString()+')':'')};
 const sync=()=>fetchContent().then(c=>{if(window.PF_STATUS)debugChip(window.PF_STATUS);if(!c)return;const j=JSON.stringify(c);if(j!==localStorage.getItem('pf-content')){apply(c);try{localStorage.setItem('pf-content',j)}catch(e){}}}).catch(e=>debugChip({ok:false,msg:String(e)}));
-const first=sync();document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});
+const first=PREVIEW?Promise.resolve():sync();document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!PREVIEW)sync()});
+/* Live preview: the Manager sends its unpublished data to this page and tells it which page to show */
+let pvPage='';
+addEventListener('message',e=>{const d=e.data;if(e.origin!==location.origin||!d||d.pf!=='preview')return;apply(d.data);
+ if(d.page&&d.page!==pvPage){pvPage=d.page;const p=document.getElementById(d.page),m=$('main');if(p&&m)m.scrollTo({top:p.getBoundingClientRect().top-m.getBoundingClientRect().top+m.scrollTop,behavior:'smooth'})}});
 
 /* Desktop: glide from page to page with the mouse wheel, keys and the navbar (phones keep their own snap scrolling) */
 const mainEl=$('main'),idx=()=>Math.round(mainEl.scrollTop/mainEl.clientHeight),still=matchMedia('(prefers-reduced-motion:reduce)').matches;
@@ -130,6 +138,11 @@ document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest
   reveal()})();
  setTimeout(reveal,7500);
 })();
+
+/* Save contact: builds a .vcf from your Manager data (name, phone, email, links) */
+$('#vc').onclick=()=>{const g=k=>(DATA.contacts.find(c=>c.icon===k)||{}).link||'',tel=(g('whatsapp').match(/wa\.me\/(\d+)/)||[])[1],mail=g('email').replace(/^mailto:/,''),n=DATA.hero;
+ const L=['BEGIN:VCARD','VERSION:3.0',`N:${n.line2};${n.line1};;;`,`FN:${n.line1} ${n.line2}`,tel?`TEL;TYPE=CELL:+${tel}`:'',mail?`EMAIL:${mail}`:'',...DATA.socials.filter(x=>x.link).map(x=>'URL:'+x.link),'END:VCARD'].filter(Boolean);
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([L.join('\r\n')],{type:'text/vcard'}));a.download=(n.line1+'-'+n.line2).replace(/\s+/g,'-')+'.vcf';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1500)};
 
 /* Creativity pieces without a link open the picture full size */
 const lb=$('#lb');

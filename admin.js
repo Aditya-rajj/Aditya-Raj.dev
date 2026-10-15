@@ -7,7 +7,7 @@ const toast = (m, i = 'fa-circle-check', ms = 3400) => { const t = $('#toast'); 
 const SYNC = { ok: '<i class="fa-solid fa-circle-check"></i><em>Published</em>', dirty: '<i class="fa-solid fa-circle"></i><em>Unpublished</em>', busy: '<i class="fa-solid fa-spinner fa-spin"></i><em>Publishing…</em>' };
 const setSync = s => { const e = $('#sync'); e.className = 'sync ' + s; e.innerHTML = SYNC[s]; };
 const syncAvatar = () => { const u = DATA && DATA.hero.image ? cdn(DATA.hero.image, 120) : ''; $$('.av img').forEach(i => { i.style.display = u ? '' : 'none'; if (u && i.getAttribute('src') !== u) i.src = u; }); };
-const mark = () => { dirty = true; setSync('dirty'); $('#pubbar .t').textContent = 'Unpublished changes'; $('#pubbar').classList.add('show'); syncAvatar(); };
+const mark = () => { dirty = true; setSync('dirty'); $('#pubbar .t').textContent = 'Unpublished changes'; $('#pubbar').classList.add('show'); syncAvatar(); pvSoon(); };
 const F = (t, k, l, o = {}) => Object.assign({ t, k, l }, o);
 
 /* icon for each field */
@@ -20,6 +20,11 @@ const WF = [F('text', 'title', 'Title'), F('text', 'tag', 'Label', { ic: 'fa-sol
   F('text', 'url', 'Link', { hint: 'Leave empty to open the picture full size when it is tapped.' }), F('img', 'image', 'Cover image', { max: 1400 }),
   F('sel', 'shape', 'Card shape', { ic: 'fa-solid fa-crop-simple', opts: { wide: ['', 'Wide (16:9): websites and apps'], square: ['', 'Square (1:1): designs and posters'], portrait: ['', 'Portrait (3:4): book covers'] } }),
   F('sel', 'fit', 'Picture fit', { ic: 'fa-solid fa-expand', opts: { cover: ['', 'Fill the card (may crop the edges)'], contain: ['', 'Show the whole picture'] } })];
+/* Live preview: shows the site in a frame and sends it your unpublished data as you type */
+const PAGE = { Hero: 'home', About: 'about', Work: 'work', Photos: 'frames', Music: 'sound', Contact: 'talk' }, OR = location.origin === 'null' ? '*' : location.origin;
+let pvOpen = false, pvT;
+const pvSend = () => { const f = $('#pvi'); if (pvOpen && f.contentWindow && DATA) f.contentWindow.postMessage({ pf: 'preview', data: DATA, page: PAGE[tab] }, OR); };
+const pvSoon = () => { clearTimeout(pvT); pvT = setTimeout(pvSend, 250); };
 /* What can be edited. sub = which part of the data a section edits. */
 const SECTIONS = {
   Hero: { i: 'fa-house', d: 'The first screen of your site', sub: 'hero', fields: [F('img', 'image', 'Hero photo', { max: 1400 }), F('text', 'status', 'Status line (top right)'), F('text', 'line1', 'Name, first line'), F('text', 'line2', 'Name, second line'), F('area', 'tagline', 'Tagline', { hint: 'Wrap a word in *stars* to make it italic serif.' })] },
@@ -126,7 +131,7 @@ function openTab(n, top) {
   p.innerHTML = `<div class="sh"><span class="ic"><i class="fa-solid ${S.i}"></i></span><div><h2>${n}</h2><p>${esc(S.d)}</p></div></div>`;
   if (!(CL.cloudinary && CL.cloudinary.uploadPreset)) p.prepend(el(NOTE));
   fields(g, S.fields, S.sub ? DATA[S.sub] : DATA); p.append(g);
-  if (top) scrollTo({ top: 0, behavior: 'instant' });
+  if (top) scrollTo({ top: 0, behavior: 'instant' }); pvSoon();
 }
 Object.keys(SECTIONS).forEach(n => { const b = el(`<button type="button" data-t="${n}"><i class="fa-solid ${SECTIONS[n].i}"></i>${n}</button>`); b.onclick = () => openTab(n, 1); $('#nav').append(b); });
 
@@ -158,6 +163,9 @@ if (coarse) {   /* phones: tuck the bottom bars away while the keyboard is open 
   document.addEventListener('focusout', () => setTimeout(() => { if (!isField(document.activeElement)) document.body.classList.remove('typing'); }, 80));
 }
 
+$('#pvb').onclick = () => { $('#pv').hidden = false; pvOpen = true; const f = $('#pvi'); if (!f.getAttribute('src')) { f.onload = pvSend; f.src = 'index.html?preview'; } else pvSend(); };
+$('#pvx').onclick = () => { $('#pv').hidden = true; pvOpen = false; };
+$$('.seg2 button').forEach(b => b.onclick = () => { $$('.seg2 button').forEach(x => x.classList.toggle('on', x === b)); $('#pvi').style.setProperty('--w', b.dataset.w === '0' ? '100%' : b.dataset.w + 'px'); });
 /* sign in + publish */
 if (!cloudReady()) { $('#err').textContent = 'Add your Firebase and Cloudinary details to cloud-config.js first (see SETUP.txt).'; $('#in').disabled = true; }
 else {

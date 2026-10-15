@@ -253,6 +253,20 @@ html.glide main{scroll-snap-type:none;scroll-behavior:auto}
 #lb.on{opacity:1;visibility:visible}
 #lb img{max-width:100%;max-height:100%;border-radius:18px;box-shadow:0 30px 80px -20px #000;transform:scale(.95);transition:transform .7s var(--soft)}
 #lb.on img{transform:none}
+/* ===== v3: card layout that works for every shape, save-contact button, keyboard focus ===== */
+.card{width:calc(var(--ch)*var(--arn,1.7778))}
+.card .go{position:absolute;z-index:2;top:10px;right:10px;width:30px;height:30px;display:grid;place-items:center;border-radius:50%;background:var(--a);color:#000;font-size:12px;transform:rotate(-45deg)}
+.card .go.fa-expand{transform:none}
+.card .tg{max-width:calc(100% - 58px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .ct{position:absolute;z-index:2;left:12px;right:12px;bottom:11px;margin:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;font:400 20px/1.06 'Anton',sans-serif;text-transform:uppercase;text-shadow:0 2px 12px rgba(0,0,0,.5)}
+.card.fit .ct{bottom:13px}
+@supports (width:1cqw){.card{container-type:inline-size}.card .ct{font-size:clamp(15px,9.5cqw,24px)}}
+@container (max-width:140px){.card .go{width:26px;height:26px;top:8px;right:8px;font-size:11px}.card .tg{top:8px;left:8px;padding:4px 8px;font-size:9px;max-width:calc(100% - 50px)}.card .ct{left:9px;right:9px;bottom:9px}}
+.soh{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.vc{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 14px;border-radius:99px;border:1px solid #2b2b2b;background:#101010;color:#e6e6df;font:600 12px 'Space Grotesk',sans-serif;letter-spacing:.04em;cursor:pointer;transition:background .5s var(--soft),color .4s var(--soft),border-color .5s var(--soft)}
+.vc:hover{background:var(--a);color:#000;border-color:var(--a)}
+:focus-visible{outline:2px solid var(--a);outline-offset:3px}
+.card:focus-visible{outline-offset:4px;border-radius:22px}
 /* ---- laptops & desktops ---- */
 @media(max-height:700px){.page{gap:12px;padding-bottom:98px}.stats div{padding:10px 0}.stats b{font-size:34px}.deck{--s:min(50vw,29dvh,360px)}.trk span{height:38px;font-size:13px}.quote{font-size:19px}}
 @media(min-width:900px){
