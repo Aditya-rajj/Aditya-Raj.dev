@@ -83,7 +83,10 @@ const io = new IntersectionObserver(
         if (!lockNav) go(pages.indexOf(e.target));
         count(e.target);
         if (e.target.id === 'talk') place(1);
-        if (e.target.id === 'work') arrows();
+        if (e.target.id === 'work') {
+          placeWork(1);
+          arrows();
+        }
       }
     }),
   { root: $('main'), threshold: 0.6 }
@@ -93,6 +96,7 @@ pages.forEach(p => io.observe(p));
 addEventListener('resize', () => {
   go(cur, true);
   place(1);
+  placeWork(1);
   arrows();
 });
 go(0, true);
@@ -100,11 +104,12 @@ if (document.fonts) {
   document.fonts.ready.then(() => {
     go(cur, true);
     place(1);
+    placeWork(1);
     arrows();
   });
 }
 
-/* Section Renderers */
+/* Section Renderers & Sliding Pill Controllers */
 const AR = ['4/5', '1', '3/4', '5/6'];
 const TT = [44, 58, 50, 54, 46];
 const DD = [-8, -24, -15, -33, -4];
@@ -114,7 +119,7 @@ let cats = [];
 
 const place = snap => {
   const b = tbs[tn];
-  const tp = $('.tp');
+  const tp = $('#tabs .tp');
   if (!b || !tp) return;
   if (snap) tp.style.transition = 'none';
   tp.style.width = b.offsetWidth + 'px';
@@ -125,6 +130,9 @@ const place = snap => {
   }
 };
 
+const isPrivateRedirect = c =>
+  c && (c.icon === 'whatsapp' || c.icon === 'phone' || /wa\.me|whatsapp\.com|^tel:/i.test(c.link || ''));
+
 const pick = (n, snap) => {
   tn = n;
   tbs.forEach((b, k) => {
@@ -134,30 +142,269 @@ const pick = (n, snap) => {
   place(snap);
   $('#rows').innerHTML = DATA.contacts
     .filter(c => c.cat === cats[n])
-    .map(
-      (c, k) =>
-        `<a style="--k:${k}" href="${esc(safe(c.link))}"${
-          /^https?:/.test(c.link || '') ? ' target="_blank" rel="noopener"' : ''
-        }${c.icon === 'resume' ? ' download' : ''}><i class="l ${
-          (ICONS[c.icon] || ICONS.link)[0]
-        }"></i><span>${esc(c.title)}<small>${esc(c.note)}</small></span><i class="ar fa-solid fa-arrow-up-right-from-square"></i></a>`
-    )
+    .map((c, k) => {
+      const priv = isPrivateRedirect(c);
+      const targetUrl = safe(c.link);
+      const cleanTitle = maskPhoneText(c.title);
+      const cleanNote = maskPhoneText(c.note);
+      const hrefAttr = priv
+        ? `href="#chat" data-wa="${esc(btoa(targetUrl))}"`
+        : `href="${esc(targetUrl)}"${/^https?:/.test(c.link || '') ? ' target="_blank" rel="noopener"' : ''}${
+            c.icon === 'resume' ? ' download' : ''
+          }`;
+      return `<a style="--k:${k}" ${hrefAttr}><i class="l ${
+        (ICONS[c.icon] || ICONS.link)[0]
+      }"></i><span>${esc(cleanTitle)}<small>${esc(cleanNote)}</small></span><i class="ar fa-solid fa-arrow-up-right-from-square"></i></a>`;
+    })
     .join('');
 };
 
-const arrows = () =>
-  $$('#work .grp2').forEach(g => {
-    const r = $('.rail', g);
-    const a = $('.arr', g);
-    if (a && r) a.hidden = r.scrollWidth <= r.clientWidth + 4;
-  });
+$('#rows').addEventListener('click', e => {
+  const a = e.target.closest('a[data-wa]');
+  if (!a) return;
+  e.preventDefault();
+  try {
+    const u = atob(a.dataset.wa);
+    window.open(u, '_blank', 'noopener,noreferrer');
+  } catch (err) {}
+});
 
-$$('#work .arr button').forEach(b => {
+/* Work Section: Projects & Books Pill Switcher + Books 3D Stage */
+const wtbs = $$('#wtabs button');
+let wmode = 'proj';
+let bi = 0;
+
+const hasDetails = p => !!(p && (p.desc || p.tags || p.year || (p.shots && p.shots.length) || (p.links && p.links.length)));
+
+const placeWork = snap => {
+  const idx = wmode === 'book' ? 1 : 0;
+  const b = wtbs[idx];
+  const tp = $('#wtp');
+  if (!b || !tp) return;
+  if (snap) tp.style.transition = 'none';
+  tp.style.width = b.offsetWidth + 'px';
+  tp.style.transform = `translateX(${b.offsetLeft}px)`;
+  if (snap) {
+    void tp.offsetWidth;
+    tp.style.transition = '';
+  }
+};
+
+const pickWork = (mode, snap) => {
+  wmode = mode === 'book' ? 'book' : 'proj';
+  $('#work').dataset.mode = wmode;
+  wtbs.forEach(b => {
+    const on = b.dataset.w === wmode;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-selected', on);
+  });
+  placeWork(snap);
+  const isBook = wmode === 'book';
+  $('#w-proj').hidden = isBook;
+  $('#w-book').hidden = !isBook;
+  $('#w-ttl').innerHTML = isBook ? 'Selected <em>books</em>' : 'Selected <em>work</em>';
+  $('#w-sub').textContent = isBook ? 'Published words & art' : 'Swipe →';
+  if (!isBook) requestAnimationFrame(arrows);
+  else tickBook();
+};
+
+wtbs.forEach(b => {
+  b.onclick = () => pickWork(b.dataset.w);
+});
+
+const rail1 = $('#rail1');
+const updateWorkDots = () => {
+  const cards = $$('.card', rail1);
+  if (!cards.length) return;
+  const center = rail1.scrollLeft + rail1.clientWidth * 0.35;
+  let active = 0;
+  let best = Infinity;
+  cards.forEach((c, i) => {
+    const dist = Math.abs(c.offsetLeft - center);
+    if (dist < best) {
+      best = dist;
+      active = i;
+    }
+  });
+  $$('#wdots .wdot').forEach((d, i) => d.classList.toggle('on', i === active));
+  $('#wcnt').textContent = `${String(active + 1).padStart(2, '0')} / ${String(cards.length).padStart(2, '0')}`;
+};
+
+const arrows = () => {
+  const a = $('#warr');
+  if (a && rail1) a.hidden = rail1.scrollWidth <= rail1.clientWidth + 4;
+  updateWorkDots();
+};
+
+rail1.addEventListener('scroll', updateWorkDots, { passive: true });
+
+$$('#warr button').forEach(b => {
   b.onclick = () => {
-    const r = b.closest('.grp2').querySelector('.rail');
-    r.scrollBy({ left: (b.dataset.d === '1' ? 1 : -1) * r.clientWidth * 0.8, behavior: 'smooth' });
+    rail1.scrollBy({ left: (b.dataset.d === '1' ? 1 : -1) * rail1.clientWidth * 0.8, behavior: 'smooth' });
   };
 });
+
+/* Books Showcase (Music-Style 3D Deck + Aspect Ratio + Fit + Video + Details) */
+const bdeck = $('#bdeck');
+const bsleeve = $('#bsleeve');
+const bimg = $('#bimg');
+const bvid = $('#bvid');
+const bprog = $('#bprog i');
+
+const getBooks = () => {
+  const C = DATA.creative && DATA.creative.length ? DATA.creative : DEFAULTS.creative;
+  return C && C.length ? C : [];
+};
+
+const tickBook = () => {
+  const list = getBooks();
+  bprog.classList.remove('run');
+  void bprog.offsetWidth;
+  if (list.length > 1 && wmode === 'book') bprog.classList.add('run');
+};
+
+const showBook = (i, dir = 1, now) => {
+  const list = getBooks();
+  if (!list.length) return;
+  bi = (i + list.length) % list.length;
+  const b = list[bi];
+  const applyBook = () => {
+    const shape = b.shape || 'portrait';
+    const fit = b.fit === 'contain';
+    bdeck.dataset.shape = shape;
+    bsleeve.classList.toggle('fit', fit);
+    bsleeve.classList.remove('noimg', 'vplay');
+    bsleeve.dataset.title = b.title || 'Book';
+    bsleeve.style.setProperty('--sx', dir > 0 ? '26px' : '-26px');
+    bsleeve.style.setProperty('--bg', b.image ? `url('${cdn(b.image, 300)}')` : 'none');
+
+    if (bvid) {
+      bvid.pause();
+      if (b.video) {
+        bvid.dataset.src = cdn(b.video, 600);
+        bvid.removeAttribute('src');
+      } else {
+        bvid.removeAttribute('data-src');
+        bvid.removeAttribute('src');
+      }
+    }
+
+    bimg.classList.remove('noimg');
+    delete bimg.dataset.fb;
+    bimg.src = b.image ? cdn(b.image, 900) : '';
+    if (!b.image) bimg.dispatchEvent(new Event('error'));
+
+    $('#btg').textContent = b.tag || 'Book';
+    $('#bt').textContent = b.title || 'Untitled';
+
+    const metaParts = [b.tag || 'Book', b.year].filter(Boolean);
+    const tagParts = String(b.tags || '')
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean)
+      .slice(0, 3);
+    $('#bmeta').innerHTML = [...new Set([...metaParts, ...tagParts])].map(m => `<span>${esc(m)}</span>`).join('');
+    $('#bd').textContent = b.desc || '';
+
+    const det = hasDetails(b);
+    $('#bopen-txt').textContent = det ? 'Explore book' : b.url ? 'Open link' : 'View cover';
+    $('#bzoom').hidden = !b.image;
+
+    $$('#bthumbs button').forEach((btn, k) => btn.classList.toggle('on', k === bi));
+    bsleeve.classList.remove('ch');
+    void bsleeve.offsetWidth;
+    bsleeve.classList.add('ch');
+    bdeck.classList.remove('swap');
+    tickBook();
+  };
+
+  if (now) applyBook();
+  else {
+    bdeck.classList.add('swap');
+    setTimeout(applyBook, 300);
+  }
+};
+
+bprog.addEventListener('animationend', () => {
+  if (getBooks().length > 1) showBook(bi + 1);
+});
+
+$('#bthumbs').onclick = e => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  const k = [...$('#bthumbs').children].indexOf(btn);
+  if (k !== bi) showBook(k, k > bi ? 1 : -1);
+};
+
+let bsx = 0;
+const bstg = $('#bstage');
+bstg.onpointerdown = e => {
+  bsx = e.clientX;
+};
+bstg.onpointerup = e => {
+  const d = e.clientX - bsx;
+  if (Math.abs(d) > 45 && getBooks().length > 1) {
+    showBook(bi + (d < 0 ? 1 : -1), d < 0 ? 1 : -1);
+  }
+};
+
+if (matchMedia('(hover:hover) and (pointer:fine)').matches) {
+  bstg.addEventListener('pointermove', e => {
+    const r = bstg.getBoundingClientRect();
+    bdeck.style.setProperty('--ry', ((e.clientX - r.left) / r.width - 0.5) * 14 + 'deg');
+    bdeck.style.setProperty('--rx', (0.5 - (e.clientY - r.top) / r.height) * 10 + 'deg');
+  });
+  bstg.addEventListener('pointerleave', () => {
+    bdeck.style.setProperty('--ry', '0deg');
+    bdeck.style.setProperty('--rx', '0deg');
+  });
+  bsleeve.addEventListener('mouseenter', () => {
+    if (bvid && bvid.dataset.src) {
+      if (!bvid.getAttribute('src')) bvid.src = bvid.dataset.src;
+      bvid.play().then(() => bsleeve.classList.add('vplay')).catch(() => {});
+    }
+  });
+  bsleeve.addEventListener('mouseleave', () => {
+    if (bvid) {
+      bvid.pause();
+      bsleeve.classList.remove('vplay');
+    }
+  });
+}
+
+const triggerBookAction = originEl => {
+  const list = getBooks();
+  const b = list[bi];
+  if (!b) return;
+  if (hasDetails(b)) {
+    openSheet(ds, detail(b), originEl);
+  } else if (b.url) {
+    window.open(safe(b.url), '_blank', 'noopener,noreferrer');
+  } else if (b.image) {
+    $('img', lb).src = cdn(b.image, 1400);
+    lb.classList.add('on');
+  }
+};
+
+$('#bopen').onclick = e => triggerBookAction(e.currentTarget);
+$('#btl').onclick = e => {
+  e.preventDefault();
+  triggerBookAction(e.currentTarget);
+};
+bsleeve.onclick = e => triggerBookAction(e.currentTarget);
+bsleeve.onkeydown = e => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    triggerBookAction(bsleeve);
+  }
+};
+$('#bzoom').onclick = () => {
+  const b = getBooks()[bi];
+  if (b && b.image) {
+    $('img', lb).src = cdn(b.image, 1600);
+    lb.classList.add('on');
+  }
+};
 
 const R = {
   hero() {
@@ -205,27 +452,49 @@ const R = {
 
   work() {
     const shapes = { wide: ['16/9', 1.7778], square: ['1/1', 1], portrait: ['3/4', 0.75] };
-    const C = DATA.creative || [];
-    const hasDetails = p => !!(p.desc || p.tags || p.year || (p.shots && p.shots.length) || (p.links && p.links.length));
+    const B = getBooks();
     const card = (p, defShape, k, i) => {
       const fit = p.fit === 'contain';
       const a = shapes[p.shape] || shapes[defShape];
-      const attrs = `class="card${fit ? ' fit' : ''}${hasDetails(p) ? ' hasd' : ''}" style="--ar:${a[0]};--arn:${a[1]}" data-k="${k}" data-i="${i}"`;
+      const num = String(i + 1).padStart(2, '0');
+      const bgStyle = fit && p.image ? `;--bg:url('${esc(cdn(p.image, 300))}')` : '';
+      const attrs = `class="card${fit ? ' fit' : ''}${hasDetails(p) ? ' hasd' : ''}" style="--ar:${a[0]};--arn:${a[1]}${bgStyle}" data-k="${k}" data-i="${i}"`;
+      const sub = p.desc || p.tags || '';
       const body = `<img src="${esc(cdn(p.image, 800))}" alt="" loading="lazy">${
         p.video ? `<video class="pvv" muted loop playsinline preload="none" data-src="${esc(cdn(p.video, 600))}"></video>` : ''
       }${p.tag ? `<span class="tg">${esc(p.tag)}</span>` : ''}<i class="go fa-solid ${
         p.url || hasDetails(p) ? 'fa-arrow-right' : 'fa-expand'
-      }"></i><h3 class="ct">${esc(p.title)}</h3>`;
+      }"></i><div class="cinfo"><span class="cnum">${num}${p.year ? ' · ' + esc(p.year) : ''}</span><h3 class="ct">${esc(
+        p.title
+      )}</h3>${sub ? `<p class="cdesc">${esc(sub)}</p>` : ''}</div>`;
       return p.url
         ? `<a ${attrs} href="${esc(safe(p.url))}" target="_blank" rel="noopener">${body}</a>`
         : `<div ${attrs} role="button" tabindex="0" data-img="${esc(cdn(p.image, 1400))}" aria-label="View ${esc(p.title)}">${body}</div>`;
     };
-    $('#rail1').innerHTML = DATA.projects.map((p, i) => card(p, 'wide', 'p', i)).join('');
-    $('#rail2').innerHTML = C.map((p, i) => card(p, 'square', 'c', i)).join('');
-    $('#w2').hidden = !C.length;
+
+    rail1.innerHTML = DATA.projects.map((p, i) => card(p, 'wide', 'p', i)).join('');
+    $('#wdots').innerHTML = DATA.projects
+      .map((p, i) => `<button type="button" class="wdot${i === 0 ? ' on' : ''}" aria-label="Go to ${esc(p.title)}"></button>`)
+      .join('');
+    $$('#wdots .wdot').forEach((d, i) => {
+      d.onclick = () => {
+        const target = $$('.card', rail1)[i];
+        if (target) rail1.scrollTo({ left: target.offsetLeft - 20, behavior: 'smooth' });
+      };
+    });
+
     $('#n1').textContent = String(DATA.projects.length).padStart(2, '0');
-    $('#n2').textContent = String(C.length).padStart(2, '0');
-    $('#work').style.setProperty('--rows', C.length ? 2 : 1);
+    $('#n2').textContent = String(B.length).padStart(2, '0');
+
+    $('#bthumbs').innerHTML = B.map(
+      b => `<button type="button" aria-label="${esc(b.title)}"><img src="${esc(cdn(b.image, 200))}" alt=""></button>`
+    ).join('');
+    $('#bthumbs').hidden = B.length <= 1;
+    $('#bprog').hidden = B.length <= 1;
+
+    bi = Math.min(bi, Math.max(0, B.length - 1));
+    showBook(bi, 1, 1);
+    pickWork(wmode, 1);
     requestAnimationFrame(arrows);
   },
 
@@ -364,7 +633,7 @@ $('#thumbs').onclick = e => {
 };
 
 let sx = 0;
-const stg = $('.stage');
+const stg = $('#sound .stage');
 stg.onpointerdown = e => {
   sx = e.clientX;
 };
@@ -570,7 +839,7 @@ if (desk) {
   document.addEventListener(
     'wheel',
     e => {
-      if (e.ctrlKey || Math.abs(e.deltaX) > Math.abs(e.deltaY) || document.querySelector('.ds.on,#lb.on')) return;
+      if (e.ctrlKey || Math.abs(e.deltaX) > Math.abs(e.deltaY) || document.querySelector('.ds.on,#lb.on,#net.on')) return;
       e.preventDefault();
       const n = performance.now();
       const quiet = n - lastWheel > 140;
@@ -586,7 +855,7 @@ if (desk) {
       e.ctrlKey ||
       e.metaKey ||
       /INPUT|TEXTAREA|SELECT/.test(e.target.tagName) ||
-      document.querySelector('.ds.on,#lb.on')
+      document.querySelector('.ds.on,#lb.on,#net.on')
     )
       return;
     const d = { ArrowDown: 1, PageDown: 1, ' ': e.shiftKey ? -1 : 1, ArrowUp: -1, PageUp: -1 }[e.key];
@@ -602,7 +871,7 @@ if (desk) {
 
 document.addEventListener('click', e => {
   const a = e.target.closest && e.target.closest('a[href^="#"]');
-  if (!a) return;
+  if (!a || a.hasAttribute('data-wa') || a.id === 'btl') return;
   const p = document.getElementById(a.getAttribute('href').slice(1));
   if (!p || !p.classList.contains('page')) return;
   const i = pages.indexOf(p);
@@ -658,12 +927,11 @@ document.addEventListener('click', e => {
   setTimeout(reveal, 7500);
 })();
 
-/* Save Contact (.vcf) */
+/* Save Contact (.vcf) — Phone Number Omitted for Privacy */
 const siteUrl = () => (DATA.site && DATA.site.url) || location.origin + location.pathname.replace(/index\.html$/, '');
 
 $('#vc').onclick = () => {
   const getLink = k => (DATA.contacts.find(c => c.icon === k) || {}).link || '';
-  const tel = (getLink('whatsapp').match(/wa\.me\/(\d+)/) || [])[1];
   const mail = getLink('email').replace(/^mailto:/, '');
   const n = DATA.hero;
   const lines = [
@@ -671,7 +939,6 @@ $('#vc').onclick = () => {
     'VERSION:3.0',
     `N:${n.line2};${n.line1};;;`,
     `FN:${n.line1} ${n.line2}`,
-    tel ? `TEL;TYPE=CELL:+${tel}` : '',
     mail ? `EMAIL:${mail}` : '',
     'URL:' + siteUrl(),
     ...DATA.socials.filter(x => x.link).map(x => 'URL:' + x.link),
@@ -840,7 +1107,7 @@ document.addEventListener('click', e => {
   const c = T.closest('.card');
   if (c && c.classList.contains('hasd') && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
     e.preventDefault();
-    const p = (c.dataset.k === 'c' ? DATA.creative : DATA.projects)[+c.dataset.i];
+    const p = (c.dataset.k === 'c' ? getBooks() : DATA.projects)[+c.dataset.i];
     if (p) openSheet(ds, detail(p), c);
     return;
   }
@@ -901,6 +1168,57 @@ $$('.grab').forEach(g => {
   g.addEventListener('pointerup', end);
   g.addEventListener('pointercancel', end);
 });
+
+/* Sarcastic No Internet Live Overlay & Service Worker */
+const netOv = $('#net');
+const netMsg = $('#net-msg');
+const ROASTS = [
+  'Still offline. Did the carrier pigeons go on strike?',
+  'Nope, zero packets. Have you tried staring angrily at the router?',
+  'Still nothing. Turning Airplane Mode on and off is free, just saying.',
+  '404: Your ISP’s effort not found. Give it another second.',
+  'Even smoke signals have better ping than your connection right now.'
+];
+let roastIdx = 0;
+
+const showOffline = on => {
+  if (!netOv) return;
+  netOv.classList.toggle('on', on);
+  netOv.setAttribute('aria-hidden', String(!on));
+};
+
+addEventListener('offline', () => showOffline(true));
+addEventListener('online', () => {
+  showOffline(false);
+  if (!PREVIEW) sync();
+});
+
+if ($('#net-retry')) {
+  $('#net-retry').onclick = e => {
+    if (navigator.onLine) {
+      flash(e.currentTarget, 'Back online!');
+      setTimeout(() => showOffline(false), 500);
+      if (!PREVIEW) sync();
+      return;
+    }
+    if (netMsg) {
+      netMsg.style.opacity = '0';
+      setTimeout(() => {
+        netMsg.textContent = ROASTS[roastIdx++ % ROASTS.length];
+        netMsg.style.opacity = '1';
+      }, 150);
+    }
+    flash(e.currentTarget, 'Still dead');
+  };
+}
+
+if ($('#net-skip')) {
+  $('#net-skip').onclick = () => showOffline(false);
+}
+
+if ('serviceWorker' in navigator && /^https?:/.test(location.protocol) && !PREVIEW) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
 
 /* Progressive Image Loading & Error Fallback */
 const BLANK_GIF = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
@@ -999,7 +1317,7 @@ if (fine) {
     { passive: true }
   );
   document.addEventListener('pointerover', e =>
-    curEl.classList.toggle('hot', !!(e.target.closest && e.target.closest('a,button,.card,.lg,[role=tab]')))
+    curEl.classList.toggle('hot', !!(e.target.closest && e.target.closest('a,button,.card,.bsleeve,.lg,[role=tab]')))
   );
   addEventListener('pointerdown', () => curEl.classList.add('down'));
   addEventListener('pointerup', () => curEl.classList.remove('down'));
@@ -1007,7 +1325,7 @@ if (fine) {
 }
 
 /* Interactive Ripple, Glow, Card Tilt & Video Previews */
-const FX = '.btn,.ic,.card,.lg,.tabs,.rows a,#soc a,.dock a,.pillb,.vc,.cbtn';
+const FX = '.btn,.ic,.card,.bsleeve,.lg,.tabs,.rows a,#soc a,.dock a,.pillb,.vc,.cbtn';
 
 const updateGlow = (t, e) => {
   const r = t.getBoundingClientRect();

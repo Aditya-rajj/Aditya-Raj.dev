@@ -11,6 +11,12 @@ const cdn = (u, w) =>
     ? u.replace('/upload/', `/upload/f_auto,q_auto,w_${w}/`)
     : u;
 
+/* Masks any raw phone numbers in contact notes/titles so they are never exposed in the UI */
+const maskPhoneText = s =>
+  String(s || '')
+    .replace(/\+?\d[\d\s()-]{7,}\d/g, 'Direct message')
+    .replace(/Direct message\s*·\s*Direct message/gi, 'Direct message');
+
 const ICONS = {
   email: ['fa-regular fa-envelope', 'Email'],
   whatsapp: ['fa-brands fa-whatsapp', 'WhatsApp'],
@@ -29,6 +35,9 @@ const ICONS = {
   facebook: ['fa-brands fa-facebook-f', 'Facebook'],
   link: ['fa-solid fa-link', 'Other link']
 };
+
+/* Default WhatsApp redirect URL kept encoded so raw phone digits are not exposed in plain source */
+const WA_DEFAULT = atob('aHR0cHM6Ly93YS5tZS85MTgyNTI1ODQwNjM=');
 
 const DEFAULTS = {
   hero: {
@@ -51,12 +60,24 @@ const DEFAULTS = {
     resume: 'assets/resume.pdf'
   },
   projects: [
-    { title: 'Hunter Digit', url: 'https://hunterdigit-github-io.vercel.app/index.html', image: 'assets/projects/hunter-digit.png', tag: 'Web app', shape: 'wide', fit: 'cover' },
-    { title: 'QR Studio', url: 'https://qr-studio-github-io.vercel.app/', image: 'assets/projects/qr-studio.jpg', tag: 'Web tool', shape: 'wide', fit: 'cover' },
-    { title: 'Resize Studio', url: 'https://resize-studio-github-io.vercel.app/', image: 'assets/projects/resize-studio.jpg', tag: 'Web tool', shape: 'wide', fit: 'cover' },
-    { title: 'Broken Melodies', url: 'https://broken-melodies.vercel.app/', image: 'assets/projects/broken-melodies.png', tag: 'Music site', shape: 'wide', fit: 'cover' }
+    { title: 'Hunter Digit', url: 'https://hunterdigit-github-io.vercel.app/index.html', image: 'assets/projects/hunter-digit.png', tag: 'Web app', shape: 'wide', fit: 'cover', desc: 'Interactive number & digit intelligence web application.' },
+    { title: 'QR Studio', url: 'https://qr-studio-github-io.vercel.app/', image: 'assets/projects/qr-studio.jpg', tag: 'Web tool', shape: 'wide', fit: 'cover', desc: 'Custom QR code generator and studio in the browser.' },
+    { title: 'Resize Studio', url: 'https://resize-studio-github-io.vercel.app/', image: 'assets/projects/resize-studio.jpg', tag: 'Web tool', shape: 'wide', fit: 'cover', desc: 'Fast client-side image resizer and format converter.' },
+    { title: 'Broken Melodies', url: 'https://broken-melodies.vercel.app/', image: 'assets/projects/broken-melodies.png', tag: 'Music site', shape: 'wide', fit: 'cover', desc: 'Official streaming hub and discography showcase.' }
   ],
-  creative: [],
+  creative: [
+    {
+      title: 'Almost Yours',
+      tag: 'Book',
+      year: '2025',
+      url: '',
+      image: 'https://broken-melodies.vercel.app/almost%20Yours.png',
+      shape: 'portrait',
+      fit: 'cover',
+      desc: 'What happens when two broken souls find their missing pieces in each other, only to realize the world has different plans?',
+      tags: 'Book, Fiction, Romance'
+    }
+  ],
   site: { url: '' },
   photos: {
     list: [
@@ -78,7 +99,7 @@ const DEFAULTS = {
     { cat: 'Work', icon: 'email', title: 'Email', note: 'ishaan8862@gmail.com · projects & collabs', link: 'mailto:ishaan8862@gmail.com' },
     { cat: 'Work', icon: 'github', title: 'GitHub', note: 'Aditya-rajj · code & open source', link: 'https://github.com/Aditya-rajj' },
     { cat: 'Work', icon: 'resume', title: 'Resume', note: 'Download my CV (PDF)', link: 'assets/resume.pdf' },
-    { cat: 'Chat', icon: 'whatsapp', title: 'WhatsApp', note: '+91 82525 84063 · quick chat', link: 'https://wa.me/918252584063' },
+    { cat: 'Chat', icon: 'whatsapp', title: 'WhatsApp', note: 'Direct message · quick chat', link: WA_DEFAULT },
     { cat: 'Chat', icon: 'telegram', title: 'Telegram', note: '@ISHAAN_199 · chat & files', link: 'https://t.me/ISHAAN_199' },
     { cat: 'Chat', icon: 'instagram', title: 'Instagram', note: '@aadi.echo · say hi in the DMs', link: 'https://instagram.com/aadi.echo' },
     { cat: 'Create', icon: 'spotify', title: 'Spotify', note: 'My music, on repeat', link: 'https://open.spotify.com/artist/0OTaxoblHJk2crI3tZ1K1V' },
@@ -116,6 +137,16 @@ function fixStats(c) {
       s.since = y - (+s.n || 0) + '-01';
     } else {
       s.auto = 'manual';
+    }
+  });
+  (c.contacts || []).forEach(item => {
+    if (item.note && /\+?\d[\d\s()-]{7,}\d/.test(item.note)) {
+      item.note = maskPhoneText(item.note);
+      changed = true;
+    }
+    if (item.title && /\+?\d[\d\s()-]{7,}\d/.test(item.title)) {
+      item.title = maskPhoneText(item.title);
+      changed = true;
     }
   });
   return changed;

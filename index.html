@@ -20,7 +20,7 @@
   <title>Aditya Raj — Creator, Developer, Musician</title>
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Instrument+Serif:ital@1&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=13">
+  <link rel="stylesheet" href="style.css?v=15">
   <noscript>
     <style>
       .rv, .hv, .ln i { opacity: 1 !important; transform: none !important; animation: none !important; }
@@ -107,53 +107,69 @@
       <a class="btn rv" href="assets/resume.pdf" download>Download resume <i class="fa-solid fa-download"></i></a>
     </section>
 
-    <section class="page" id="work" style="--rows:1">
-      <div class="lab rv"><span>02 — Work</span><span>Swipe →</span></div>
-      <h2 class="big rv">Selected <em>work</em></h2>
-      <div class="grp2 rv" id="w1">
-        <div class="gh">
-          <h3><i class="fa-solid fa-code"></i>Projects <small id="n1">04</small></h3>
-          <div class="arr">
-            <button type="button" data-d="-1" aria-label="Previous"><i class="fa-solid fa-chevron-left"></i></button>
-            <button type="button" data-d="1" aria-label="Next"><i class="fa-solid fa-chevron-right"></i></button>
-          </div>
-        </div>
-        <div class="rail" id="rail1">
-          <a class="card" style="--ar:16/9;--arn:1.7778" href="https://hunterdigit-github-io.vercel.app/index.html" target="_blank" rel="noopener">
-            <img src="assets/projects/hunter-digit.png" alt="" loading="lazy">
-            <span class="tg">Web app</span>
-            <i class="go fa-solid fa-arrow-right"></i>
-            <h3 class="ct">Hunter Digit</h3>
-          </a>
-          <a class="card" style="--ar:16/9;--arn:1.7778" href="https://qr-studio-github-io.vercel.app/" target="_blank" rel="noopener">
-            <img src="assets/projects/qr-studio.jpg" alt="" loading="lazy">
-            <span class="tg">Web tool</span>
-            <i class="go fa-solid fa-arrow-right"></i>
-            <h3 class="ct">QR Studio</h3>
-          </a>
-          <a class="card" style="--ar:16/9;--arn:1.7778" href="https://resize-studio-github-io.vercel.app/" target="_blank" rel="noopener">
-            <img src="assets/projects/resize-studio.jpg" alt="" loading="lazy">
-            <span class="tg">Web tool</span>
-            <i class="go fa-solid fa-arrow-right"></i>
-            <h3 class="ct">Resize Studio</h3>
-          </a>
-          <a class="card" style="--ar:16/9;--arn:1.7778" href="https://broken-melodies.vercel.app/" target="_blank" rel="noopener">
-            <img src="assets/projects/broken-melodies.png" alt="" loading="lazy">
-            <span class="tg">Music site</span>
-            <i class="go fa-solid fa-arrow-right"></i>
-            <h3 class="ct">Broken Melodies</h3>
-          </a>
+    <section class="page" id="work" data-mode="proj">
+      <div class="lab rv">
+        <span>02 — Work</span>
+        <span id="w-sub">Swipe →</span>
+      </div>
+
+      <div class="whd rv">
+        <h2 class="big" id="w-ttl">Selected <em>work</em></h2>
+        <div class="tabs wt" id="wtabs" role="tablist" aria-label="Work categories">
+          <b class="tp" id="wtp"></b>
+          <button type="button" role="tab" class="on" aria-selected="true" data-w="proj">
+            <i class="fa-solid fa-code"></i><span>Projects</span><small id="n1">04</small>
+          </button>
+          <button type="button" role="tab" aria-selected="false" data-w="book">
+            <i class="fa-solid fa-book-open"></i><span>Books</span><small id="n2">01</small>
+          </button>
         </div>
       </div>
-      <div class="grp2 rv" id="w2" hidden>
-        <div class="gh">
-          <h3><i class="fa-solid fa-wand-magic-sparkles"></i>Creativity <small id="n2">00</small></h3>
-          <div class="arr">
-            <button type="button" data-d="-1" aria-label="Previous"><i class="fa-solid fa-chevron-left"></i></button>
-            <button type="button" data-d="1" aria-label="Next"><i class="fa-solid fa-chevron-right"></i></button>
+
+      <!-- Projects View -->
+      <div class="wview rv" id="w-proj">
+        <div class="rail" id="rail1"></div>
+        <div class="wbar">
+          <div class="wdots" id="wdots" role="tablist" aria-label="Project slides"></div>
+          <span class="wcnt" id="wcnt">01 / 04</span>
+          <div class="arr" id="warr">
+            <button type="button" data-d="-1" aria-label="Previous project"><i class="fa-solid fa-chevron-left"></i></button>
+            <button type="button" data-d="1" aria-label="Next project"><i class="fa-solid fa-chevron-right"></i></button>
           </div>
         </div>
-        <div class="rail" id="rail2"></div>
+      </div>
+
+      <!-- Books Showcase View (Styled Like Music) -->
+      <div class="wview bview rv" id="w-book" hidden>
+        <div class="stage bstage" id="bstage">
+          <div class="bdeck" id="bdeck" data-shape="portrait">
+            <div class="bpages" aria-hidden="true"><i></i></div>
+            <div class="bsleeve" id="bsleeve" role="button" tabindex="0" aria-label="Open book details">
+              <img id="bimg" alt="">
+              <video class="pvv" id="bvid" muted loop playsinline preload="none"></video>
+              <span class="tg" id="btg">Book</span>
+            </div>
+          </div>
+        </div>
+        <div class="now bnow">
+          <div class="bmeta" id="bmeta"></div>
+          <a class="ttl" id="btl" href="#book">
+            <h3 id="bt">&nbsp;</h3>
+            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+          </a>
+          <p class="bdesc" id="bd"></p>
+        </div>
+        <div class="prog" id="bprog"><i></i></div>
+        <div class="thumbs" id="bthumbs"></div>
+        <div class="cta" id="bcta">
+          <button type="button" class="btn" id="bopen">
+            <span id="bopen-txt">Explore book</span>
+            <i class="fa-solid fa-book-open"></i>
+          </button>
+          <button type="button" class="ic" id="bzoom" aria-label="View cover full screen">
+            <i class="fa-solid fa-expand"></i>
+          </button>
+        </div>
       </div>
     </section>
 
@@ -236,6 +252,23 @@
 
   <div id="lb" aria-hidden="true"><img alt=""></div>
 
+  <!-- Sarcastic No Internet Overlay -->
+  <div id="net" class="sys-ov" aria-hidden="true" role="dialog" aria-modal="true" aria-label="No internet connection">
+    <div class="sys-card">
+      <div class="lab">
+        <span>00 — Offline</span>
+        <span class="sys-dot"><i></i>0 bars of hope</span>
+      </div>
+      <div class="sys-ic"><i class="fa-solid fa-wifi"></i><b>/</b></div>
+      <h2 class="big">No <em>internet.</em></h2>
+      <p class="sys-msg" id="net-msg">Your Wi-Fi just went out for milk and never came back. Even my code can’t fix your router—try paying the bill or aggressively toggling Airplane Mode.</p>
+      <div class="sys-acts">
+        <button type="button" class="cbtn" id="net-retry"><i class="fa-solid fa-rotate-right"></i><span>Check connection</span></button>
+        <button type="button" class="pillb" id="net-skip"><i class="fa-regular fa-eye"></i><span>Browse cached site anyway</span></button>
+      </div>
+    </div>
+  </div>
+
   <nav class="dock" id="dock" aria-label="Pages">
     <b class="pill"></b>
     <a href="#home" aria-label="Home"><i class="fa-solid fa-house"></i><span>Home</span></a>
@@ -246,8 +279,8 @@
     <a href="#talk" aria-label="Talk"><i class="fa-solid fa-paper-plane"></i><span>Talk</span></a>
   </nav>
 
-  <script src="cloud-config.js?v=13"></script>
-  <script src="cloud.js?v=13"></script>
-  <script src="script.js?v=13"></script>
+  <script src="cloud-config.js?v=15"></script>
+  <script src="cloud.js?v=15"></script>
+  <script src="script.js?v=15"></script>
 </body>
 </html>

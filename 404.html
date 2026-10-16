@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <title>404 — Lost in the Void | Aditya Raj</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='32' fill='%23d4ff3a'/%3E%3Ctext x='32' y='43' font-size='30' font-weight='700' text-anchor='middle' font-family='Arial' fill='%23000'%3EA%3C/text%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Instrument+Serif:ital@1&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link rel="stylesheet" href="style.css?v=15">
+</head>
+<body class="err-page">
+  <div class="hglow" aria-hidden="true"></div>
+
+  <main class="err-wrap">
+    <div class="sys-card err-card">
+      <div class="lab">
+        <span>404 — Not Found</span>
+        <span class="live"><i></i>Nice URL typing</span>
+      </div>
+
+      <div class="err-code" aria-hidden="true">
+        <span>4</span><span class="zero"><i class="fa-regular fa-compass"></i></span><span>4</span>
+      </div>
+
+      <h1 class="big">Nothing <em>here.</em></h1>
+
+      <p class="sys-msg" id="excuse">
+        Congratulations, you found the digital equivalent of an empty fridge. Whatever you were looking for either moved, never existed, or is actively hiding from you.
+      </p>
+
+      <div class="urlc" id="bad-url">
+        <i class="fa-solid fa-link-slash"></i>
+        <span id="path-txt">/lost-in-space</span>
+      </div>
+
+      <div class="sys-acts">
+        <a class="cbtn" href="index.html">
+          <i class="fa-solid fa-house"></i>
+          <span>Take me back home</span>
+        </a>
+        <button type="button" class="pillb" id="blame-btn">
+          <i class="fa-solid fa-dice"></i>
+          <span>Generate another excuse</span>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const pathEl = document.getElementById('path-txt');
+    if (pathEl) pathEl.textContent = location.pathname + location.search + location.hash;
+
+    const EXCUSES = [
+      "Congratulations, you found the digital equivalent of an empty fridge. Whatever you were looking for either moved, never existed, or is actively hiding from you.",
+      "I checked the database, the cache, and under the couch cushions. This page is definitely not here.",
+      "Either I broke a link, or you just freestyle-typed a URL with your elbows. Let’s quietly blame DNS and move on.",
+      "404: This page went out to buy coffee in 2023 and hasn’t been seen since.",
+      "Good news: the server is alive. Bad news: it has zero idea what page you’re asking for.",
+      "A cosmic ray flipped a bit, the intern panicked, and now you’re staring at this screen."
+    ];
+    let idx = 0;
+    const btn = document.getElementById('blame-btn');
+    const msg = document.getElementById('excuse');
+    if (btn && msg) {
+      btn.onclick = () => {
+        idx = (idx + 1) % EXCUSES.length;
+        msg.style.opacity = '0';
+        setTimeout(() => {
+          msg.textContent = EXCUSES[idx];
+          msg.style.opacity = '1';
+        }, 160);
+      };
+    }
+
+    const home = document.body;
+    home.addEventListener('pointermove', e => {
+      if (e.pointerType !== 'mouse') return;
+      home.style.setProperty('--hx', (e.clientX / innerWidth) * 100 + '%');
+      home.style.setProperty('--hy', (e.clientY / innerHeight) * 100 + '%');
+    }, { passive: true });
+  </script>
+</body>
+</html>

@@ -220,9 +220,9 @@ const SECTIONS = {
         head: WH,
         fields: WF
       }),
-      F('list', 'creative', 'Creativity (books, designs, anything else)', {
-        noun: 'creative piece',
-        add: { title: 'New piece', tag: 'Book', url: '', image: '', shape: 'square', fit: 'cover' },
+      F('list', 'creative', 'Books & creative work', {
+        noun: 'book',
+        add: { title: 'New book', tag: 'Book', url: '', image: '', shape: 'portrait', fit: 'cover' },
         head: WH,
         fields: WF
       })
