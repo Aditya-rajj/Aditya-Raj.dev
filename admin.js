@@ -16,10 +16,15 @@ const ico = k => `<i class="${(ICONS[k] || ICONS.link)[0]}"></i>`;
 
 const NOTE = '<div class="note"><i class="fa-solid fa-triangle-exclamation"></i><div><b>One-time setup for image uploads</b><p>Cloudinary needs an <em>unsigned upload preset</em>. In Cloudinary: Settings (gear) &rarr; Upload &rarr; Upload presets &rarr; Add upload preset &rarr; Signing mode: Unsigned &rarr; Save. Then paste its name into <code>cloud-config.js</code> as <code>uploadPreset</code>.</p></div></div>';
 const WH = it => ({ t: it.image ? `<img src="${esc(cdn(it.image, 100))}" alt="">` : '<i class="fa-regular fa-image"></i>', a: it.title, b: [it.tag, it.url].filter(Boolean).join(' · ') });
-const WF = [F('text', 'title', 'Title'), F('text', 'tag', 'Label', { ic: 'fa-solid fa-tag', hint: 'Short word on the card, for example Book, Poster, App.' }),
-  F('text', 'url', 'Link', { hint: 'Leave empty to open the picture full size when it is tapped.' }), F('img', 'image', 'Cover image', { max: 1400 }),
+const WF = [F('text', 'title', 'Title'), F('text', 'tag', 'Label', { ic: 'fa-solid fa-tag', hint: 'Short word on the card, for example Book, Poster, App.' }), F('text', 'year', 'Year', { ic: 'fa-regular fa-calendar', hint: 'Optional. Shown in the details sheet.' }),
+  F('text', 'url', 'Link', { hint: 'The main link. Leave empty to open the picture full size.' }), F('img', 'image', 'Cover image', { max: 1400 }),
   F('sel', 'shape', 'Card shape', { ic: 'fa-solid fa-crop-simple', opts: { wide: ['', 'Wide (16:9): websites and apps'], square: ['', 'Square (1:1): designs and posters'], portrait: ['', 'Portrait (3:4): book covers'] } }),
-  F('sel', 'fit', 'Picture fit', { ic: 'fa-solid fa-expand', opts: { cover: ['', 'Fill the card (may crop the edges)'], contain: ['', 'Show the whole picture'] } })];
+  F('sel', 'fit', 'Picture fit', { ic: 'fa-solid fa-expand', opts: { cover: ['', 'Fill the card (may crop the edges)'], contain: ['', 'Show the whole picture'] } }),
+  F('area', 'desc', 'Description', { ic: 'fa-solid fa-align-left', hint: 'Shown when someone taps the card. Plain text; new lines are kept.' }),
+  F('text', 'tags', 'Tags', { ic: 'fa-solid fa-tags', hint: 'Comma separated, for example HTML, Firebase, Poetry, Hindi.' }),
+  F('imgs', 'shots', 'Screenshots or pages', { ic: 'fa-solid fa-images', max: 1400, hint: 'Extra pictures shown in the details sheet.' }),
+  F('list', 'links', 'Extra buttons', { noun: 'button', ic: 'fa-solid fa-link', add: { label: 'Buy on Amazon', url: 'https://' }, head: it => ({ t: '<i class="fa-solid fa-link"></i>', a: it.label, b: it.url }), fields: [F('text', 'label', 'Button text'), F('text', 'url', 'Link')] }),
+  F('file', 'video', 'Hover preview video', { ic: 'fa-solid fa-film', hint: 'A short silent loop (3 to 6 seconds, under 5 MB). It plays when someone hovers the card on a computer.' })];
 /* Live preview: shows the site in a frame and sends it your unpublished data as you type */
 const PAGE = { Hero: 'home', About: 'about', Work: 'work', Photos: 'frames', Music: 'sound', Contact: 'talk' }, OR = location.origin === 'null' ? '*' : location.origin;
 let pvOpen = false, pvT;
@@ -46,7 +51,8 @@ const SECTIONS = {
     F('list', 'contacts', 'Contact options', { noun: 'contact option', add: { cat: 'Chat', icon: 'link', title: 'New', note: '', link: 'https://' }, head: it => ({ t: ico(it.icon), a: it.title, b: it.cat }),
       fields: [F('text', 'cat', 'Category (tab name)', { dl: 1 }), F('sel', 'icon', 'Icon', { opts: ICONS, icons: 1 }), F('text', 'title', 'Title'), F('text', 'note', 'Note'), F('text', 'link', 'Link', { hint: 'Start with https://, mailto: or tel:' })] }),
     F('list', 'socials', 'Social icons', { noun: 'social icon', add: { icon: 'link', title: 'New', link: '' }, head: it => ({ t: ico(it.icon), a: it.title, b: it.link || 'No link yet (shown greyed out)' }),
-      fields: [F('sel', 'icon', 'Icon', { opts: ICONS, icons: 1 }), F('text', 'title', 'Name'), F('text', 'link', 'Link', { hint: 'Leave empty to show the icon greyed out.' })] })] }
+      fields: [F('sel', 'icon', 'Icon', { opts: ICONS, icons: 1 }), F('text', 'title', 'Name'), F('text', 'link', 'Link', { hint: 'Leave empty to show the icon greyed out.' })] }),
+    F('group', 'site', 'Share card', { ic: 'fa-solid fa-qrcode', fields: [F('text', 'url', 'Public website address', { ic: 'fa-solid fa-globe', hint: 'The address people open your site at, for example https://yourname.com. Used by the QR code, the NFC card and the Share button.' }), F('share', 'tools', 'QR code and NFC card', { ic: 'fa-solid fa-qrcode' })] })] }
 };
 
 function fields(box, fs, obj) { fs.forEach(f => { const w = field(f, obj); box.append(w); if (f.when) { const vis = () => { w.hidden = obj[f.when[0]] !== f.when[1]; }; vis(); box.addEventListener('pf-change', vis); } }); }
@@ -100,6 +106,21 @@ function field(f, o) {
       if (done) toast(`Added ${done} photo${done > 1 ? 's' : ''}${saved > 0 ? ' · saved ' + kbs(saved) : ''}`, 'fa-compress');
     };
     c.append(g, fi);
+  } else if (f.t === 'group') {
+    fields(c, f.fields, o[f.k] = o[f.k] || {});
+  } else if (f.t === 'share') {
+    const row = el('<div class="row"><button type="button" class="b" data-a="qr"><i class="fa-solid fa-download"></i>Download QR</button><button type="button" class="b" data-a="nfc"><i class="fa-solid fa-tower-broadcast"></i>Write to NFC card</button><button type="button" class="b" data-a="copy"><i class="fa-regular fa-copy"></i>Copy link</button></div>'), note = el('<span class="stat"></span>');
+    row.onclick = async e => {
+      const b = e.target.closest('[data-a]'); if (!b) return; const u = (o.url || '').trim();
+      if (!u) { note.textContent = 'Type your public website address above first.'; return; }
+      if (b.dataset.a === 'copy') { try { await navigator.clipboard.writeText(u); note.textContent = 'Link copied.'; } catch (x) { note.textContent = u; } }
+      else if (b.dataset.a === 'qr') { try { await qrDownload(u, 'portfolio-qr.png'); note.textContent = 'QR saved. Print it on your card.'; } catch (x) { note.textContent = 'Could not make the QR code (are you online?).'; } }
+      else {
+        if (!('NDEFReader' in window)) { note.innerHTML = 'Writing NFC cards needs Chrome on Android. Otherwise use the free "NFC Tools" app and write this link: <b>' + esc(u) + '</b>'; return; }
+        try { note.textContent = 'Hold a blank NFC card or sticker against the back of your phone…'; await new NDEFReader().write({ records: [{ recordType: 'url', data: u }] }); note.textContent = 'Done. Tapping that card now opens your site.'; } catch (x) { note.textContent = 'Could not write the card: ' + x.message; }
+      }
+    };
+    c.append(row, note);
   } else if (f.t === 'list') {
     const box = el('<div class="ls"></div>'), add = el(`<button type="button" class="addb"><i class="fa-solid fa-plus"></i>Add ${esc(f.noun || 'item')}</button>`);
     const draw = focus => {

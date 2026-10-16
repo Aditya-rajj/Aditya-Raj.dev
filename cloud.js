@@ -31,6 +31,7 @@ const DEFAULTS = {
     { title: 'Broken Melodies', url: 'https://broken-melodies.vercel.app/', image: 'assets/projects/broken-melodies.png', tag: 'Music site', shape: 'wide', fit: 'cover' }
   ],
   creative: [],
+  site: { url: '' },
   photos: {
     list: [
       'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=500&auto=format&fit=crop',
@@ -139,4 +140,21 @@ async function upload(file, max = 1600, stage = () => {}) {
   const j = await r.json();
   if (!j.secure_url) throw new Error((j.error && j.error.message) || 'Upload failed');
   return { url: j.secure_url, before, after: j.bytes || send.size, w: j.width, h: j.height };
+}
+
+/* QR codes: the small qrcode-generator library is loaded only when needed */
+let _qr;
+const loadQR = () => _qr || (_qr = new Promise((ok, no) => { if (window.qrcode) return ok(); const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js'; s.onload = ok; s.onerror = no; document.head.append(s); }));
+async function qrSvg(text, pad = 2) {
+  await loadQR(); const q = qrcode(0, 'M'); q.addData(text); q.make(); const n = q.getModuleCount(); let d = '';
+  for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) if (q.isDark(r, k)) d += `M${k + pad} ${r + pad}h1v1h-1z`;
+  const s = n + pad * 2;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${s} ${s}" shape-rendering="crispEdges"><rect width="${s}" height="${s}" fill="#fff"/><path d="${d}" fill="#000"/></svg>`;
+}
+async function qrDownload(text, name = 'qr.png') {
+  const svg = await qrSvg(text, 3), img = new Image(), url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+  await new Promise((ok, no) => { img.onload = ok; img.onerror = no; img.src = url; });
+  const n = +/viewBox="0 0 (\d+)/.exec(svg)[1], px = Math.floor(1024 / n), cv = document.createElement('canvas'); cv.width = cv.height = px * n;
+  const x = cv.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(img, 0, 0, cv.width, cv.height); URL.revokeObjectURL(url);
+  cv.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; document.body.append(a); a.click(); a.remove(); }, 'image/png');
 }

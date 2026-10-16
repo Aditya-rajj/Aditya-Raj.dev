@@ -36,10 +36,11 @@ const R={
   st.style.gridTemplateColumns=`repeat(${a.stats.length||1},1fr)`;st.innerHTML=a.stats.map(s=>`<div><b data-n="${statVal(s,DATA.projects.length)}">0</b><span>${esc(s.label)}</span></div>`).join('');
   const t=$$('.trk');t[0].innerHTML=pills(a.dev);t[1].innerHTML=pills(a.creative);t.forEach(x=>x.innerHTML+=x.innerHTML);$('#about .btn').href=safe(a.resume)},
  work(){const AR={wide:['16/9',1.7778],square:['1/1',1],portrait:['3/4',.75]},C=DATA.creative||[];
-  const card=(p,d)=>{const fit=p.fit==='contain',a=AR[p.shape]||AR[d],at=`class="card${fit?' fit':''}" style="--ar:${a[0]};--arn:${a[1]}"`,
-   body=`<img src="${esc(cdn(p.image,800))}" alt="" loading="lazy">${p.tag?`<span class="tg">${esc(p.tag)}</span>`:''}<i class="go fa-solid ${p.url?'fa-arrow-right':'fa-expand'}"></i><h3 class="ct">${esc(p.title)}</h3>`;
+  const has=p=>!!(p.desc||p.tags||p.year||(p.shots&&p.shots.length)||(p.links&&p.links.length));
+  const card=(p,d,k,i)=>{const fit=p.fit==='contain',a=AR[p.shape]||AR[d],at=`class="card${fit?' fit':''}${has(p)?' hasd':''}" style="--ar:${a[0]};--arn:${a[1]}" data-k="${k}" data-i="${i}"`,
+   body=`<img src="${esc(cdn(p.image,800))}" alt="" loading="lazy">${p.video?`<video class="pvv" muted loop playsinline preload="none" data-src="${esc(cdn(p.video,600))}"></video>`:''}${p.tag?`<span class="tg">${esc(p.tag)}</span>`:''}<i class="go fa-solid ${p.url||has(p)?'fa-arrow-right':'fa-expand'}"></i><h3 class="ct">${esc(p.title)}</h3>`;
    return p.url?`<a ${at} href="${esc(safe(p.url))}" target="_blank" rel="noopener">${body}</a>`:`<div ${at} role="button" tabindex="0" data-img="${esc(cdn(p.image,1400))}" aria-label="View ${esc(p.title)}">${body}</div>`};
-  $('#rail1').innerHTML=DATA.projects.map(p=>card(p,'wide')).join('');$('#rail2').innerHTML=C.map(p=>card(p,'square')).join('');
+  $('#rail1').innerHTML=DATA.projects.map((p,i)=>card(p,'wide','p',i)).join('');$('#rail2').innerHTML=C.map((p,i)=>card(p,'square','c',i)).join('');
   $('#w2').hidden=!C.length;$('#n1').textContent=String(DATA.projects.length).padStart(2,'0');$('#n2').textContent=String(C.length).padStart(2,'0');
   $('#work').style.setProperty('--rows',C.length?2:1);arrows()},
  frames(){const L=DATA.photos.list,P=L&&L.length?L:DEFAULTS.photos.list;
@@ -116,8 +117,8 @@ const glideTo=i=>{i=Math.max(0,Math.min(pages.length-1,i));const from=mainEl.scr
   if(k<1)requestAnimationFrame(step);else{gliding=false;lockNav=false;go(idx())}};requestAnimationFrame(step)};
 if(desk){
  document.documentElement.classList.add('glide');
- document.addEventListener('wheel',e=>{if(e.ctrlKey||Math.abs(e.deltaX)>Math.abs(e.deltaY))return;e.preventDefault();const n=performance.now(),quiet=n-lastWheel>140;lastWheel=n;if(gliding||!quiet||Math.abs(e.deltaY)<6)return;glideTo(idx()+(e.deltaY>0?1:-1))},{passive:false});
- addEventListener('keydown',e=>{if(e.altKey||e.ctrlKey||e.metaKey||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
+ document.addEventListener('wheel',e=>{if(e.ctrlKey||Math.abs(e.deltaX)>Math.abs(e.deltaY)||document.querySelector('.ds.on,#lb.on'))return;e.preventDefault();const n=performance.now(),quiet=n-lastWheel>140;lastWheel=n;if(gliding||!quiet||Math.abs(e.deltaY)<6)return;glideTo(idx()+(e.deltaY>0?1:-1))},{passive:false});
+ addEventListener('keydown',e=>{if(e.altKey||e.ctrlKey||e.metaKey||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)||document.querySelector('.ds.on,#lb.on'))return;
   const d={ArrowDown:1,PageDown:1,' ':e.shiftKey?-1:1,ArrowUp:-1,PageUp:-1}[e.key];
   if(d){e.preventDefault();if(!gliding)glideTo(idx()+d)}else if(e.key==='Home'||e.key==='End'){e.preventDefault();if(!gliding)glideTo(e.key==='Home'?0:pages.length-1)}});
 }
@@ -141,13 +142,61 @@ document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest
 
 /* Save contact: builds a .vcf from your Manager data (name, phone, email, links) */
 $('#vc').onclick=()=>{const g=k=>(DATA.contacts.find(c=>c.icon===k)||{}).link||'',tel=(g('whatsapp').match(/wa\.me\/(\d+)/)||[])[1],mail=g('email').replace(/^mailto:/,''),n=DATA.hero;
- const L=['BEGIN:VCARD','VERSION:3.0',`N:${n.line2};${n.line1};;;`,`FN:${n.line1} ${n.line2}`,tel?`TEL;TYPE=CELL:+${tel}`:'',mail?`EMAIL:${mail}`:'',...DATA.socials.filter(x=>x.link).map(x=>'URL:'+x.link),'END:VCARD'].filter(Boolean);
+ const L=['BEGIN:VCARD','VERSION:3.0',`N:${n.line2};${n.line1};;;`,`FN:${n.line1} ${n.line2}`,tel?`TEL;TYPE=CELL:+${tel}`:'',mail?`EMAIL:${mail}`:'','URL:'+siteUrl(),...DATA.socials.filter(x=>x.link).map(x=>'URL:'+x.link),'END:VCARD'].filter(Boolean);
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([L.join('\r\n')],{type:'text/vcard'}));a.download=(n.line1+'-'+n.line2).replace(/\s+/g,'-')+'.vcf';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1500)};
 
-/* Creativity pieces without a link open the picture full size */
-const lb=$('#lb');
-document.addEventListener('click',e=>{const c=e.target.closest&&e.target.closest('.card[data-img]');if(c){$('img',lb).src=c.dataset.img;lb.classList.add('on');return}if(lb.classList.contains('on')&&e.target.closest&&e.target.closest('#lb'))lb.classList.remove('on')});
-addEventListener('keydown',e=>{if(e.key==='Escape')lb.classList.remove('on');const a=document.activeElement;if(e.key==='Enter'&&a&&a.matches&&a.matches('.card[data-img]'))a.click()});
+/* Sheets: project / book details, the share card (QR + NFC), and the full-size picture viewer */
+const lb=$('#lb'),ds=$('#ds'),sh=$('#sh');let lastFocus=null;
+const closeSheets=()=>{[ds,sh].forEach(x=>{x.classList.remove('on');x.setAttribute('aria-hidden','true')});if(lastFocus&&lastFocus.focus)lastFocus.focus({preventScroll:true})};
+const openSheet=(x,html,o)=>{lastFocus=document.activeElement;const r=o&&o.getBoundingClientRect?o.getBoundingClientRect():null;   /* desktop: the sheet grows out of the thing you tapped */
+ x.style.setProperty('--ox',r?(r.left+r.width/2-innerWidth/2)+'px':'0px');x.style.setProperty('--oy',r?(r.top+r.height/2-innerHeight/2)+'px':'0px');
+ $('.dsc',x).innerHTML=html;x.classList.add('on');x.setAttribute('aria-hidden','false');$('.dsp',x).scrollTop=0;setTimeout(()=>$('.dsx',x).focus({preventScroll:true}),80)};
+const siteUrl=()=>(DATA.site&&DATA.site.url)||location.origin+location.pathname.replace(/index\.html$/,'');
+const flash=(b,t)=>{const o=b.innerHTML;b.innerHTML='<i class="fa-solid fa-check"></i>'+t;setTimeout(()=>{b.innerHTML=o},1700)};
+const detail=p=>{const wide=!(p.fit==='contain'||p.shape==='portrait'),tags=String(p.tags||'').split(',').map(t=>t.trim()).filter(Boolean),links=(p.links||[]).filter(l=>l.url),shots=p.shots||[];
+ let k=0;const at=()=>` style="--k:${k++}"`,jj=n=>` style="--j:${n}"`;   /* --k / --j drive the staggered entrance */
+ const parts=[`<div class="meta"${at()}>${p.tag?`<span>${esc(p.tag)}</span>`:''}${p.year?`<span>${esc(p.year)}</span>`:''}</div>`,`<h2${at()}>${esc(p.title)}</h2>`];
+ if(p.desc)parts.push(`<p${at()}>${esc(p.desc)}</p>`);
+ if(tags.length)parts.push(`<div class="tags"${at()}>${tags.map((t,n)=>`<span${jj(n)}>${esc(t)}</span>`).join('')}</div>`);
+ if(shots.length)parts.push(`<div class="shots"${at()}>${shots.map((u,n)=>`<img${jj(n)} src="${esc(cdn(u,500))}" alt="" loading="lazy" data-zoom="${esc(cdn(u,1600))}">`).join('')}</div>`);
+ parts.push(`<div class="acts"${at()}>${p.url?`<a class="btn" href="${esc(safe(p.url))}" target="_blank" rel="noopener">Open<i class="fa-solid fa-arrow-up-right-from-square"></i></a>`:''}${links.map(l=>`<a class="pillb" href="${esc(safe(l.url))}" target="_blank" rel="noopener">${esc(l.label||'Link')}</a>`).join('')}</div>`);
+ return `<div class="dsm${wide?'':' fitm'}" style="--bg:url('${esc(cdn(p.image,300))}')"><img src="${esc(cdn(p.image,1200))}" alt="" data-zoom="${esc(cdn(p.image,1600))}"></div><div class="dsi">${parts.join('')}</div>`};
+const shareSheet=o=>{const u=siteUrl();
+ openSheet(sh,`<div class="dsi shi"><div class="qrw" style="--k:0"><div class="qrt" id="qrt"><i class="fa-solid fa-spinner fa-spin"></i></div></div><h2 style="--k:1">Scan or tap</h2><p style="--k:2">Point a camera at the code, or tap my NFC card on any phone to open my portfolio.</p><div class="urlc" style="--k:3">${esc(u)}</div>
+ <div class="acts" style="--k:4"><button type="button" class="btn" id="cpl"><i class="fa-regular fa-copy"></i>Copy link</button>${navigator.share?'<button type="button" class="pillb" id="shr"><i class="fa-solid fa-share-nodes"></i>Share</button>':''}<button type="button" class="pillb" id="qrd"><i class="fa-solid fa-download"></i>QR</button><button type="button" class="pillb" id="vc2"><i class="fa-regular fa-address-card"></i>Contact</button></div></div>`,o);
+ qrSvg(u).then(v=>{const t=$('#qrt');if(t)t.innerHTML=v}).catch(()=>{const t=$('#qrt');if(t)t.textContent='The QR code needs an internet connection'});
+ $('#cpl').onclick=async e=>{const b=e.currentTarget;try{await navigator.clipboard.writeText(u);flash(b,'Copied')}catch(x){prompt('Copy this link',u)}};
+ const sb=$('#shr');if(sb)sb.onclick=()=>navigator.share({title:DATA.hero.line1+' '+DATA.hero.line2,text:String(DATA.hero.tagline||'').replace(/\*/g,''),url:u}).catch(()=>{});
+ $('#qrd').onclick=e=>{const b=e.currentTarget;qrDownload(u,'portfolio-qr.png').then(()=>flash(b,'Saved')).catch(()=>{})};
+ $('#vc2').onclick=()=>$('#vc').click()};
+$('#shb').onclick=e=>shareSheet(e.currentTarget);$('#qrb').onclick=e=>shareSheet(e.currentTarget);
+document.addEventListener('click',e=>{const T=e.target;if(!T||!T.closest)return;
+ const z=T.closest('[data-zoom]');if(z){$('img',lb).src=z.dataset.zoom;lb.classList.add('on');return}
+ const c=T.closest('.card');
+ if(c&&c.classList.contains('hasd')&&!e.metaKey&&!e.ctrlKey&&!e.shiftKey){e.preventDefault();const p=(c.dataset.k==='c'?DATA.creative:DATA.projects)[+c.dataset.i];if(p)openSheet(ds,detail(p),c);return}
+ if(c&&c.dataset.img){$('img',lb).src=c.dataset.img;lb.classList.add('on');return}
+ if(T.closest('.dsx,.dsb')){closeSheets();return}
+ if(lb.classList.contains('on')&&T.closest('#lb'))lb.classList.remove('on')});
+addEventListener('keydown',e=>{if(e.key==='Escape'){if(lb.classList.contains('on'))lb.classList.remove('on');else closeSheets()}const a=document.activeElement;if(e.key==='Enter'&&a&&a.matches&&a.matches('.card[data-img]'))a.click()});
+
+/* Phones: drag the handle down to close a sheet; it follows your finger and carries your speed into the close */
+$$('.grab').forEach(g=>{const x=g.closest('.ds'),p=$('.dsp',x),b=$('.dsb',x);let y0=0,t0=0,dy=0,on=false;
+ g.addEventListener('pointerdown',e=>{on=true;y0=e.clientY;t0=performance.now();dy=0;p.style.transition='none';b.style.transition='none';g.setPointerCapture(e.pointerId)});
+ g.addEventListener('pointermove',e=>{if(!on)return;dy=Math.max(0,e.clientY-y0);p.style.transform=`translateY(${dy}px)`;b.style.opacity=Math.max(0,1-dy/(p.offsetHeight*.9))});
+ const end=()=>{if(!on)return;on=false;const v=dy/(performance.now()-t0+1);p.style.transition='';b.style.transition='';p.style.transform='';b.style.opacity='';if(dy>p.offsetHeight*.28||v>.7)closeSheets()};
+ g.addEventListener('pointerup',end);g.addEventListener('pointercancel',end)});
+
+/* Images fade in from a blur as they finish loading */
+document.addEventListener('load',e=>{if(e.target.tagName==='IMG')e.target.classList.add('ld')},true);
+$$('img').forEach(i=>{if(i.complete&&i.naturalWidth)i.classList.add('ld')});
+
+/* Hero (mouse only): a soft glow follows the cursor and the photo drifts slightly against it */
+if(desk&&!still){const home=$('#home'),img=$('.arch img');let tx=.5,ty=.4,cx=.5,cy=.4,on=0;
+ document.documentElement.classList.add('par');
+ const loop=()=>{cx+=(tx-cx)*.08;cy+=(ty-cy)*.08;home.style.setProperty('--hx',cx*100+'%');home.style.setProperty('--hy',cy*100+'%');
+  img.style.setProperty('--px',(.5-cx)*18+'px');img.style.setProperty('--py',(.5-cy)*14+'px');
+  if(Math.abs(tx-cx)+Math.abs(ty-cy)>.002)requestAnimationFrame(loop);else on=0};
+ home.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;const r=home.getBoundingClientRect();tx=(e.clientX-r.left)/r.width;ty=(e.clientY-r.top)/r.height;if(!on){on=1;requestAnimationFrame(loop)}},{passive:true})}
 
 /* Custom cursor: a transparent ring that follows the mouse and grows over things you can press (mouse only) */
 if(matchMedia('(hover:hover) and (pointer:fine)').matches&&!matchMedia('(prefers-reduced-motion:reduce)').matches){
@@ -161,7 +210,7 @@ if(matchMedia('(hover:hover) and (pointer:fine)').matches&&!matchMedia('(prefers
 }
 
 /* Ripple on press (mouse + touch) and a glow that follows the pointer, on everything pressable */
-const FX='.btn,.ic,.card,.lg,.tabs,.rows a,.soc a,.dock a';
+const FX='.btn,.ic,.card,.lg,.tabs,.rows a,.soc a,.dock a,.pillb,.vc';
 const glow=(t,e)=>{const r=t.getBoundingClientRect();t.style.setProperty('--mx',e.clientX-r.left+'px');t.style.setProperty('--my',e.clientY-r.top+'px');
  if(!t.matches('.lg')&&!t.querySelector(':scope>.gl'))t.insertAdjacentHTML('afterbegin','<span class="gl"></span>');return r};
 document.addEventListener('pointerdown',e=>{const t=e.target.closest&&e.target.closest(FX);if(!t)return;
@@ -169,7 +218,16 @@ document.addEventListener('pointerdown',e=>{const t=e.target.closest&&e.target.c
  s.className='rp';s.style.cssText=`width:${d}px;height:${d}px;left:${e.clientX-r.left-d/2}px;top:${e.clientY-r.top-d/2}px`;
  t.append(s);s.addEventListener('animationend',()=>s.remove());
  if(e.pointerType!=='mouse'&&navigator.vibrate)navigator.vibrate(8)},{passive:true});
-document.addEventListener('pointermove',e=>{const t=e.target.closest&&e.target.closest(FX);if(t)glow(t,e)},{passive:true});
+/* tilt on project cards, magnetic buttons, hover video (mouse only) */
+const fine=matchMedia('(hover:hover) and (pointer:fine)').matches&&!matchMedia('(prefers-reduced-motion:reduce)').matches;
+document.addEventListener('pointermove',e=>{const t=e.target.closest&&e.target.closest(FX);if(!t)return;const r=glow(t,e);
+ if(!fine||e.pointerType!=='mouse')return;const x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;
+ if(t.matches('.card')){t.style.setProperty('--ry',x*9+'deg');t.style.setProperty('--rx',-y*7+'deg')}
+ else if(t.matches('.btn,.ic,.soc a')){t.style.setProperty('--tx',x*10+'px');t.style.setProperty('--ty',y*8+'px')}},{passive:true});
+document.addEventListener('mouseout',e=>{const t=e.target.closest&&e.target.closest(FX);if(t&&!t.contains(e.relatedTarget))['--rx','--ry','--tx','--ty'].forEach(k=>t.style.removeProperty(k))});
+if(fine){let hc=null;const vid=c=>c&&c.querySelector('.pvv'),stop=c=>{const v=vid(c);if(v){v.pause();c.classList.remove('vplay')}},go2=c=>{const v=vid(c);if(!v)return;if(!v.getAttribute('src'))v.src=v.dataset.src;v.play().then(()=>c.classList.add('vplay')).catch(()=>{})};
+ document.addEventListener('mouseover',e=>{const c=e.target.closest&&e.target.closest('.card');if(c===hc)return;stop(hc);hc=c;go2(c)});
+ document.documentElement.addEventListener('mouseleave',()=>{stop(hc);hc=null})}
 
 /* If an image file is missing, hide it so the placeholder shows instead of a broken icon */
 document.addEventListener('error',e=>{const t=e.target;if(t.tagName==='IMG'){t.classList.add('noimg');t.parentElement.classList.add('noimg')}},true);
