@@ -714,7 +714,7 @@ const openSheet = (x, html, originEl) => {
 
 const flash = (b, text) => {
   const orig = b.innerHTML;
-  b.innerHTML = '<i class="fa-solid fa-check"></i>' + text;
+  b.innerHTML = `<i class="fa-solid fa-check"></i><span>${text}</span>`;
   setTimeout(() => {
     b.innerHTML = orig;
   }, 1700);
@@ -759,7 +759,7 @@ const detail = p => {
   }
   parts.push(
     `<div class="acts"${at()}>${
-      p.url ? `<a class="btn" href="${esc(safe(p.url))}" target="_blank" rel="noopener">Open<i class="fa-solid fa-arrow-up-right-from-square"></i></a>` : ''
+      p.url ? `<a class="btn" href="${esc(safe(p.url))}" target="_blank" rel="noopener">Open <i class="fa-solid fa-arrow-up-right-from-square"></i></a>` : ''
     }${links.map(l => `<a class="pillb" href="${esc(safe(l.url))}" target="_blank" rel="noopener">${esc(l.label || 'Link')}</a>`).join('')}</div>`
   );
   return `<div class="dsm${wide ? '' : ' fitm'}" style="--bg:url('${esc(cdn(p.image, 300))}')"><img src="${esc(
@@ -775,12 +775,14 @@ const shareSheet = originEl => {
       <div class="qrw" style="--k:0"><div class="qrt" id="qrt"><i class="fa-solid fa-spinner fa-spin"></i></div></div>
       <h2 style="--k:1">Scan or tap</h2>
       <p style="--k:2">Point a camera at the code, or tap my NFC card on any phone to open my portfolio.</p>
-      <div class="urlc" style="--k:3">${esc(u)}</div>
+      <div class="urlc" style="--k:3"><i class="fa-solid fa-link"></i><span>${esc(u)}</span></div>
       <div class="acts" style="--k:4">
-        <button type="button" class="btn" id="cpl"><i class="fa-regular fa-copy"></i>Copy link</button>
-        ${navigator.share ? '<button type="button" class="pillb" id="shr"><i class="fa-solid fa-share-nodes"></i>Share</button>' : ''}
-        <button type="button" class="pillb" id="qrd"><i class="fa-solid fa-download"></i>QR</button>
-        <button type="button" class="pillb" id="vc2"><i class="fa-regular fa-address-card"></i>Contact</button>
+        <button type="button" class="cbtn" id="cpl"><i class="fa-regular fa-copy"></i><span>Copy link</span></button>
+        <div class="sacts">
+          ${navigator.share ? '<button type="button" class="pillb" id="shr"><i class="fa-solid fa-share-nodes"></i><span>Share</span></button>' : ''}
+          <button type="button" class="pillb" id="qrd"><i class="fa-solid fa-download"></i><span>Save QR</span></button>
+          <button type="button" class="pillb" id="vc2"><i class="fa-regular fa-address-card"></i><span>Contact</span></button>
+        </div>
       </div>
     </div>`,
     originEl
@@ -798,7 +800,7 @@ const shareSheet = originEl => {
     const b = e.currentTarget;
     try {
       await copyText(u);
-      flash(b, 'Copied');
+      flash(b, 'Copied to clipboard');
     } catch (x) {
       prompt('Copy this link', u);
     }
@@ -1005,7 +1007,7 @@ if (fine) {
 }
 
 /* Interactive Ripple, Glow, Card Tilt & Video Previews */
-const FX = '.btn,.ic,.card,.lg,.tabs,.rows a,#soc a,.dock a,.pillb,.vc';
+const FX = '.btn,.ic,.card,.lg,.tabs,.rows a,#soc a,.dock a,.pillb,.vc,.cbtn';
 
 const updateGlow = (t, e) => {
   const r = t.getBoundingClientRect();
