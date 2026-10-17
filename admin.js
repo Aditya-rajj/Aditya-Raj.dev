@@ -239,55 +239,12 @@ const SECTIONS = {
   },
   Music: {
     i: 'fa-music',
-    d: 'Manage songs, audio paths, play durations and links on the Sound page',
+    d: 'Links used on the Sound page',
     sub: 'music',
     fields: [
-      F('num', 'defaultDuration', 'Default play duration per song (seconds)', {
-        ic: 'fa-regular fa-clock',
-        hint: 'Fallback duration (e.g. 15 seconds) used if a song does not specify its own duration.'
-      }),
-      F('list', 'songs', 'Songs & short audio previews', {
-        noun: 'song',
-        ic: 'fa-solid fa-compact-disc',
-        add: {
-          title: 'New song',
-          artist: 'Aditya Raj',
-          cover: '',
-          audio: 'assets/music/new-song.mp3',
-          duration: 15,
-          start: 0,
-          url: 'https://'
-        },
-        head: it => ({
-          t: it.cover ? `<img src="${esc(cdn(it.cover, 100))}" alt="">` : '<i class="fa-solid fa-music"></i>',
-          a: it.title || 'Untitled song',
-          b: `${it.duration || (DATA && DATA.music && DATA.music.defaultDuration) || 15}s · ${it.audio || 'No song path set'}`
-        }),
-        fields: [
-          F('text', 'title', 'Song title', { ic: 'fa-solid fa-heading' }),
-          F('text', 'artist', 'Artist', { ic: 'fa-regular fa-user' }),
-          F('file', 'audio', 'Song audio path or upload (.mp3, .wav, .m4a, URL)', {
-            ic: 'fa-solid fa-music',
-            accept: 'audio/*',
-            hint: 'Place your song path here (for example assets/music/pyar-ho-na-jaye.mp3 or https://...) or upload an audio file.'
-          }),
-          F('num', 'duration', 'Play duration (seconds)', {
-            ic: 'fa-solid fa-hourglass-half',
-            hint: 'How long this song plays (after user unmutes) before advancing to the next song.'
-          }),
-          F('num', 'start', 'Start offset (seconds, optional)', {
-            ic: 'fa-solid fa-forward-step',
-            hint: 'Second mark in the audio file where playback starts (0 = beginning).'
-          }),
-          F('img', 'cover', 'Song cover image', { max: 1000 }),
-          F('text', 'url', 'Full song link (Spotify / YouTube / Website)', { ic: 'fa-solid fa-arrow-up-right-from-square' })
-        ]
-      }),
       F('text', 'spotify', 'Spotify artist link'),
       F('text', 'website', 'Music website link'),
-      F('text', 'feed', 'External songs feed link (songs.json, optional)', {
-        hint: 'Optional fallback feed. Your songs list above always takes priority.'
-      })
+      F('text', 'feed', 'Songs feed link (songs.json)')
     ]
   },
   Contact: {
@@ -686,11 +643,6 @@ const merge = c => {
       if (c[k] !== undefined) {
         d[k] = Array.isArray(d[k]) ? c[k] : Object.assign({}, d[k], c[k]);
       }
-    });
-  }
-  if (!d.music || !Array.isArray(d.music.songs) || !d.music.songs.length) {
-    d.music = Object.assign({}, DEFAULTS.music, d.music || {}, {
-      songs: JSON.parse(JSON.stringify(DEFAULTS.music.songs))
     });
   }
   migrated = fixStats(d);

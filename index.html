@@ -20,7 +20,7 @@
   <title>Aditya Raj — Creator, Developer, Musician</title>
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Instrument+Serif:ital@1&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=18">
+  <link rel="stylesheet" href="style.css?v=20">
   <noscript>
     <style>
       .rv, .hv, .ln i { opacity: 1 !important; transform: none !important; animation: none !important; }
@@ -36,10 +36,10 @@
     <section class="page in" id="home">
       <div class="lab hv">
         <span>Portfolio ’26</span>
-        <span class="live"><i></i><b id="ltxt">Indian from earth</b><em id="lclk"></em></span>
+        <span class="live"><i></i>Indian from earth</span>
       </div>
       <div class="hero">
-        <div class="arch hv" style="--i:1" data-mono="AR" data-sub="CREATOR · DEV · MUSIC">
+        <div class="arch hv" style="--i:1">
           <img src="assets/profile.jpg" alt="Aditya Raj">
           <button type="button" class="badge" id="shb" aria-label="Share my portfolio">
             <svg viewBox="0 0 120 120" aria-hidden="true">
@@ -156,52 +156,32 @@
       </div>
     </section>
 
-    <section class="page muted" id="sound">
+    <section class="page" id="sound">
       <div class="lab rv"><span>03 — Sound</span><span>Broken Melodies</span></div>
       <h2 class="big rv">Latest <em>releases</em></h2>
       <div class="stage rv">
-        <div class="deck" id="deck" data-stitle="Pyar Ho Na Jaye" data-snum="TRACK 01">
+        <div class="deck" id="deck">
           <div class="rec"><i></i></div>
           <img class="sleeve" id="sleeve" alt="">
-          <div class="sart" aria-hidden="true">
-            <span id="snum">TRACK 01 · ORIGINAL</span>
-            <b id="stit-art">PYAR HO NA JAYE</b>
-            <small>BROKEN MELODIES STUDIO</small>
-          </div>
-          <button type="button" class="smute-pill on" id="smute" aria-label="Unmute short music preview" aria-pressed="false">
-            <i class="fa-solid fa-volume-xmark"></i>
-            <span id="smute-txt">Tap to unmute</span>
-          </button>
         </div>
       </div>
       <div class="now rv" id="snow">
-        <div class="now-top">
-          <span class="eq" id="seq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-          <a class="ttl" id="stl" href="https://broken-melodies.vercel.app/" target="_blank" rel="noopener">
-            <h3 id="st">&nbsp;</h3>
-            <i class="fa-solid fa-arrow-up-right-from-square"></i>
-          </a>
-        </div>
+        <a class="ttl" id="stl" href="https://broken-melodies.vercel.app/" target="_blank" rel="noopener">
+          <h3 id="st">&nbsp;</h3>
+          <i class="fa-solid fa-arrow-up-right-from-square"></i>
+        </a>
         <small id="sa"></small>
       </div>
-      <div class="sctrl rv">
-        <button type="button" class="scb" id="sprev" aria-label="Previous track"><i class="fa-solid fa-backward-step"></i></button>
-        <button type="button" class="scb spause" id="splay" aria-label="Pause track cycle" aria-pressed="false"><i class="fa-solid fa-pause"></i></button>
-        <button type="button" class="scb smute-ic" id="smute2" aria-label="Unmute audio" aria-pressed="false" data-tip="Unmute / Mute"><i class="fa-solid fa-volume-xmark"></i></button>
-        <div class="prog" id="prog"><i></i></div>
-        <span class="scnt" id="scnt">01 / 05 · 15s</span>
-        <button type="button" class="scb" id="snext" aria-label="Next track"><i class="fa-solid fa-forward-step"></i></button>
-      </div>
+      <div class="prog rv" id="prog"><i></i></div>
       <div class="thumbs rv" id="thumbs"></div>
       <div class="cta rv">
         <a class="btn" id="spot" href="https://open.spotify.com/artist/0OTaxoblHJk2crI3tZ1K1V" target="_blank" rel="noopener">Listen now <i class="fa-brands fa-spotify"></i></a>
         <a class="ic" id="web" href="https://broken-melodies.vercel.app/" target="_blank" rel="noopener" aria-label="My music website" data-tip="Music site"><i class="fa-solid fa-globe"></i></a>
       </div>
-      <audio id="saudio" preload="metadata" playsinline></audio>
     </section>
 
     <section class="page" id="frames">
-      <div class="lab rv"><span>04 — Frames</span><span>Tap photo to inspect</span></div>
+      <div class="lab rv"><span>04 — Frames</span><span>Shot on feeling</span></div>
       <h2 class="big rv">Through my <em>lens</em></h2>
       <div class="reel rv">
         <div class="cols" id="cols" aria-label="Photography"></div>
@@ -261,8 +241,6 @@
     <div class="lbcap" id="lbcap"></div>
   </div>
 
-  <div id="ftoast" class="ftoast" role="status" aria-live="polite"></div>
-
   <!-- Sarcastic No Internet Overlay -->
   <div id="net" class="sys-ov" aria-hidden="true" role="dialog" aria-modal="true" aria-label="No internet connection">
     <div class="sys-card">
@@ -290,8 +268,8 @@
     <a href="#talk" aria-label="Talk"><i class="fa-solid fa-paper-plane"></i><span>Talk</span></a>
   </nav>
 
-  <script src="cloud-config.js?v=18"></script>
-  <script src="cloud.js?v=18"></script>
-  <script src="script.js?v=18"></script>
+  <script src="cloud-config.js?v=20"></script>
+  <script src="cloud.js?v=20"></script>
+  <script src="script.js?v=20"></script>
 </body>
 </html>

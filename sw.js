@@ -4,10 +4,10 @@ const ASSETS = [
   './index.html',
   './offline.html',
   './404.html',
-  './style.css?v=18',
-  './cloud-config.js?v=18',
-  './cloud.js?v=18',
-  './script.js?v=18',
+  './style.css?v=20',
+  './cloud-config.js?v=20',
+  './cloud.js?v=20',
+  './script.js?v=20',
   './manifest.webmanifest'
 ];
 
