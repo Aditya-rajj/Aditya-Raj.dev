@@ -400,32 +400,25 @@ const R = {
 
     const bookCard = (p, i) => {
       const fit = p.fit === 'contain';
-      const shapeKey = p.shape || 'portrait';
-      const a = shapes[shapeKey] || shapes.portrait;
       const num = String(i + 1).padStart(2, '0');
       const bgStyle = fit && p.image ? `;--bg:url('${esc(cdn(p.image, 300))}')` : '';
-      const attrs = `class="card bcard b-${esc(shapeKey)}${fit ? ' fit' : ''}${hasDetails(p) ? ' hasd' : ''}" style="--ar:${a[0]};--arn:${a[1]}${bgStyle}" data-k="c" data-i="${i}"`;
+      const attrs = `class="card bcard${fit ? ' fit' : ''}${hasDetails(p) ? ' hasd' : ''}" style="--ar:16/9;--arn:1.7778${bgStyle}" data-k="c" data-i="${i}"`;
       const sub = p.desc || p.tags || '';
-      const tags = String(p.tags || '')
-        .split(',')
-        .map(t => t.trim())
-        .filter(Boolean)
-        .slice(0, 3);
-      const ctaLabel = hasDetails(p) ? 'Read synopsis' : p.url ? 'Open edition' : 'Inspect cover';
-      const ctaIcon = hasDetails(p) ? 'fa-book-open' : p.url ? 'fa-arrow-up-right-from-square' : 'fa-expand';
-      const body = `<div class="bstage"><div class="bcover${p.image ? '' : ' noimg'}"><span class="bspine" aria-hidden="true"></span><img src="${esc(
-        cdn(p.image, 800)
-      )}" alt="" loading="lazy">${
+      const ctaLabel = hasDetails(p) ? 'Read' : p.url ? 'Open' : 'View';
+      const ctaIcon = p.url && !hasDetails(p) ? 'fa-arrow-up-right-from-square' : 'fa-arrow-right';
+      const body = `<div class="btop"><img src="${esc(cdn(p.image, 900))}" alt="" loading="lazy"${
+        p.image ? '' : ' class="noimg"'
+      }>${
         p.video ? `<video class="pvv" muted loop playsinline preload="none" data-src="${esc(cdn(p.video, 600))}"></video>` : ''
-      }<div class="bfoil" aria-hidden="true"><span>EDITION ${num}</span><b>${esc(p.title)}</b><small>${esc(
-        p.year || 'PUBLISHED'
-      )}</small></div><span class="bmark"><i class="fa-solid fa-bookmark"></i></span></div></div><div class="bfolio"><div class="bhead"><span class="btg"><i class="fa-solid fa-feather-pointed"></i>${esc(
-        p.tag || 'Book'
-      )}</span><span class="bvol">Vol. ${num}${p.year ? ' · ' + esc(p.year) : ''}</span></div><h3 class="btit">${esc(
-        p.title
-      )}</h3>${sub ? `<p class="bquote">“${esc(sub)}”</p>` : ''}${
-        tags.length ? `<div class="btags">${tags.map(t => `<span>${esc(t)}</span>`).join('')}</div>` : ''
-      }<div class="bfoot"><span class="bcta"><i class="fa-solid ${ctaIcon}"></i><span>${ctaLabel}</span></span><span class="bgo"><i class="fa-solid fa-arrow-right"></i></span></div></div>`;
+      }<div class="bposter-fb" aria-hidden="true"><span>${esc(p.tag || 'BOOK')}${
+        p.year ? ' · ' + esc(p.year) : ''
+      }</span><b>${esc(p.title)}</b></div>${
+        p.tag ? `<span class="btg">${esc(p.tag)}</span>` : ''
+      }</div><div class="bbot"><div class="btxt"><span class="bmeta">${num}${
+        p.year ? ' · ' + esc(p.year) : ''
+      }</span><h3 class="btit">${esc(p.title)}</h3>${
+        sub ? `<p class="bdesc">${esc(sub)}</p>` : ''
+      }</div><span class="bbtn"><span>${ctaLabel}</span><i class="fa-solid ${ctaIcon}"></i></span></div>`;
       return p.url
         ? `<a ${attrs} href="${esc(safe(p.url))}" target="_blank" rel="noopener">${body}</a>`
         : `<div ${attrs} role="button" tabindex="0" data-img="${esc(cdn(p.image, 1400))}" aria-label="Read ${esc(p.title)}">${body}</div>`;
@@ -529,90 +522,307 @@ const renderAll = () =>
     }
   });
 
-/* Sound Player */
+/* Sound Player: Smooth Blur/Fade Cover Transition & Muted-First Short Audio Preview */
 const BASE_MUSIC = DATA.music.website;
 const ARTIST = 'Aditya Raj';
 let songs = [];
 let si = 0;
-
-const FALLBACK_SONGS = [
-  ['Pyar Ho Na Jaye', 'pyar_ho_na_jaye.png', 'https://open.spotify.com/album/62bTAp0y8vpAfWr1LwAreg'],
-  ['Almost Yours', 'almost%20Yours.png', BASE_MUSIC],
-  ['Yaadein Teri', 'yaddain%20teri.jpg', 'https://open.spotify.com/track/1jP4JquRKRq1ssiE3tHiHe'],
-  ['Khwab Mere', 'khwab%20mere.jpg', 'https://open.spotify.com/track/2qvP8cmCcmN9gNSYLYJWWx'],
-  ['Dil Ki Baat', 'dil%20ki%20baat.jpg', 'https://open.spotify.com/track/0H9lyaDVMOngo2z0wd4dbG']
-].map(s => ({ title: s[0], artist: ARTIST, cover: BASE_MUSIC + s[1], url: s[2] }));
+let soundPaused = false;
+let audioMuted = true;
+let songElapsed = 0;
+let songLastTs = performance.now();
+let swapTimer = null;
 
 const deck = $('#deck');
 const sl = $('#sleeve');
 const prog = $('#prog i');
+const saudio = $('#saudio');
+const soundSec = $('#sound');
 
-const tick = () => {
-  prog.classList.remove('run');
-  void prog.offsetWidth;
-  prog.classList.add('run');
+const getSongDur = s =>
+  Math.max(3, Math.min(600, Number(s && s.duration) || Number(DATA.music && DATA.music.defaultDuration) || 15));
+
+/* Soft Web Audio API ambient chord preview fallback if a local .mp3 path is not placed yet */
+let actx = null;
+let synthNodes = [];
+const stopSynth = () => {
+  synthNodes.forEach(n => {
+    try {
+      if (n.gain && actx) n.gain.gain.setTargetAtTime(0.0001, actx.currentTime, 0.08);
+      setTimeout(() => {
+        try {
+          if (n.osc) n.osc.stop();
+        } catch (e) {}
+      }, 160);
+    } catch (e) {}
+  });
+  synthNodes = [];
 };
 
-let soundPaused = false;
+const startSynthFallback = idx => {
+  stopSynth();
+  if (audioMuted || soundPaused) return;
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    if (!actx) actx = new Ctx();
+    if (actx.state === 'suspended') actx.resume();
+    const chords = [
+      [220.0, 261.63, 329.63, 392.0],
+      [196.0, 246.94, 293.66, 369.99],
+      [174.61, 220.0, 261.63, 349.23],
+      [164.81, 207.65, 246.94, 329.63],
+      [146.83, 185.0, 220.0, 293.66]
+    ];
+    const notes = chords[idx % chords.length];
+    notes.forEach((freq, k) => {
+      const osc = actx.createOscillator();
+      const gain = actx.createGain();
+      osc.type = k % 2 === 0 ? 'sine' : 'triangle';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, actx.currentTime);
+      gain.gain.setTargetAtTime(0.028 / notes.length, actx.currentTime + 0.05, 0.35);
+      osc.connect(gain);
+      gain.connect(actx.destination);
+      osc.start();
+      synthNodes.push({ osc, gain });
+    });
+  } catch (e) {}
+};
 
-const showSong = (i, dir = 1, now) => {
+const stopSongAudio = () => {
+  stopSynth();
+  if (!saudio) return;
+  try {
+    saudio.pause();
+  } catch (e) {}
+};
+
+const playCurrentSongAudio = () => {
+  stopSynth();
+  if (!saudio) return;
+  if (audioMuted || soundPaused || !songs.length) {
+    stopSongAudio();
+    return;
+  }
+  const s = songs[si];
+  const src = s && s.audio ? String(s.audio).trim() : '';
+  if (!src) {
+    stopSongAudio();
+    startSynthFallback(si);
+    return;
+  }
+  try {
+    const startSec = Math.max(0, Number(s.start) || 0);
+    if (saudio.dataset.curSrc !== src) {
+      saudio.dataset.curSrc = src;
+      saudio.src = safe(src);
+    }
+    const startPlay = () => {
+      try {
+        if (Math.abs((saudio.currentTime || 0) - startSec) > 0.5) {
+          saudio.currentTime = startSec;
+        }
+      } catch (e) {}
+      saudio.muted = false;
+      saudio.volume = 0.88;
+      const pr = saudio.play();
+      if (pr && pr.catch) {
+        pr.catch(() => {
+          startSynthFallback(si);
+        });
+      }
+    };
+    if (saudio.readyState >= 1) startPlay();
+    else {
+      saudio.onloadedmetadata = () => {
+        saudio.onloadedmetadata = null;
+        if (!audioMuted && !soundPaused) startPlay();
+      };
+      saudio.onerror = () => {
+        saudio.onerror = null;
+        if (!audioMuted && !soundPaused) startSynthFallback(si);
+      };
+      saudio.load();
+    }
+  } catch (e) {
+    startSynthFallback(si);
+  }
+};
+
+const syncMuteUI = () => {
+  if (soundSec) soundSec.classList.toggle('muted', audioMuted);
+  const icon = audioMuted ? 'fa-volume-xmark' : 'fa-volume-high';
+  if ($('#smute')) {
+    $('#smute').setAttribute('aria-pressed', String(!audioMuted));
+    $('#smute').setAttribute('aria-label', audioMuted ? 'Unmute short music preview' : 'Mute music preview');
+    $('#smute').innerHTML = `<i class="fa-solid ${icon}"></i><span id="smute-txt">${
+      audioMuted ? 'Tap to unmute' : 'Playing · Unmuted'
+    }</span>`;
+  }
+  if ($('#smute2')) {
+    $('#smute2').setAttribute('aria-pressed', String(!audioMuted));
+    $('#smute2').setAttribute('aria-label', audioMuted ? 'Unmute audio' : 'Mute audio');
+    $('#smute2').innerHTML = `<i class="fa-solid ${icon}"></i>`;
+  }
+};
+
+const toggleMute = () => {
+  audioMuted = !audioMuted;
+  syncMuteUI();
+  if (!audioMuted) {
+    if (soundPaused) {
+      soundPaused = false;
+      if (soundSec) soundSec.classList.remove('paused');
+      if ($('#splay')) {
+        $('#splay').setAttribute('aria-pressed', 'false');
+        $('#splay').innerHTML = '<i class="fa-solid fa-pause"></i>';
+      }
+    }
+    songElapsed = 0;
+    songLastTs = performance.now();
+    playCurrentSongAudio();
+    const curSong = songs[si];
+    if (curSong) showToast(`Unmuted · Playing ${curSong.title} (${getSongDur(curSong)}s)`);
+  } else {
+    stopSongAudio();
+    showToast('Music muted');
+  }
+};
+
+if ($('#smute')) $('#smute').onclick = toggleMute;
+if ($('#smute2')) $('#smute2').onclick = toggleMute;
+
+const updateSongCounterUI = () => {
+  if (!songs.length) return;
+  const s = songs[si];
+  const dur = getSongDur(s);
+  const rem = Math.max(1, Math.ceil(dur - songElapsed));
+  const tnum = String(si + 1).padStart(2, '0');
+  const tot = String(songs.length).padStart(2, '0');
+  if ($('#scnt')) $('#scnt').textContent = `${tnum} / ${tot} · ${rem}s`;
+  if (prog) {
+    prog.style.transform = `scaleX(${Math.min(1, Math.max(0, songElapsed / dur)).toFixed(4)})`;
+  }
+};
+
+const showSong = (i, dir = 1, now = false) => {
   if (!songs.length) return;
   si = (i + songs.length) % songs.length;
   const s = songs[si];
   const tnum = String(si + 1).padStart(2, '0');
-  const tot = String(songs.length).padStart(2, '0');
+  songElapsed = 0;
+  songLastTs = performance.now();
+  clearTimeout(swapTimer);
+
   const applySong = () => {
-    sl.style.setProperty('--sx', dir > 0 ? '26px' : '-26px');
     sl.classList.remove('noimg');
     deck.classList.remove('noimg');
     delete sl.dataset.fb;
-    sl.src = s.cover;
-    $('#st').textContent = s.title;
-    $('#stl').href = s.url || BASE_MUSIC;
+    sl.src = s.cover || '';
+    $('#st').textContent = s.title || 'Untitled';
+    $('#stl').href = safe(s.url || BASE_MUSIC);
     $('#sa').textContent = s.artist || ARTIST;
-    if ($('#snum')) $('#snum').textContent = `TRACK ${tnum} · ORIGINAL`;
-    if ($('#stit-art')) $('#stit-art').textContent = s.title;
-    if ($('#scnt')) $('#scnt').textContent = `${tnum} / ${tot}`;
+    if ($('#snum')) $('#snum').textContent = `TRACK ${tnum} · ${getSongDur(s)}S PREVIEW`;
+    if ($('#stit-art')) $('#stit-art').textContent = s.title || 'Untitled';
     $$('#thumbs button').forEach((b, k) => b.classList.toggle('on', k === si));
-    sl.classList.remove('ch');
-    void sl.offsetWidth;
-    sl.classList.add('ch');
-    deck.classList.remove('swap');
-    tick();
-    if (sl.complete && !sl.naturalWidth) {
-      sl.classList.add('noimg');
-      deck.classList.add('noimg');
+    updateSongCounterUI();
+
+    const finishReveal = () => {
+      if (!s.cover || (sl.complete && !sl.naturalWidth)) {
+        sl.classList.add('noimg');
+        deck.classList.add('noimg');
+      }
+      requestAnimationFrame(() => {
+        deck.classList.remove('swap');
+        if (soundSec) soundSec.classList.remove('swap');
+      });
+      if (!audioMuted && !soundPaused) playCurrentSongAudio();
+    };
+
+    if (s.cover && sl.decode) {
+      Promise.race([sl.decode().catch(() => {}), new Promise(r => setTimeout(r, 110))]).then(finishReveal);
+    } else {
+      finishReveal();
     }
   };
-  if (now) applySong();
-  else {
+
+  if (now) {
+    applySong();
+  } else {
+    sl.style.setProperty('--sx', dir > 0 ? '-18px' : '18px');
     deck.classList.add('swap');
-    setTimeout(applySong, 320);
+    if (soundSec) soundSec.classList.add('swap');
+    stopSongAudio();
+    swapTimer = setTimeout(() => {
+      sl.style.setProperty('--sx', dir > 0 ? '18px' : '-18px');
+      applySong();
+    }, 260);
   }
 };
 
-prog.addEventListener('animationend', () => {
-  if (!soundPaused) showSong(si + 1);
-});
+/* Smooth 60fps cycle timer for per-song configurable duration */
+const tickSongLoop = nowTs => {
+  const dt = Math.min(0.25, Math.max(0, (nowTs - songLastTs) / 1000));
+  songLastTs = nowTs;
+  const soundVisible = soundSec && soundSec.classList.contains('in');
+  if (!soundPaused && songs.length && (soundVisible || !audioMuted) && !deck.classList.contains('swap')) {
+    const s = songs[si];
+    const dur = getSongDur(s);
+    songElapsed += dt;
+    if (!audioMuted && saudio && !saudio.paused && dur - songElapsed <= 0.65 && dur - songElapsed > 0) {
+      saudio.volume = Math.max(0.05, ((dur - songElapsed) / 0.65) * 0.88);
+    }
+    updateSongCounterUI();
+    if (songElapsed >= dur) {
+      showSong(si + 1, 1);
+    }
+  }
+  requestAnimationFrame(tickSongLoop);
+};
+requestAnimationFrame(tickSongLoop);
 
 if ($('#sprev')) $('#sprev').onclick = () => showSong(si - 1, -1);
 if ($('#snext')) $('#snext').onclick = () => showSong(si + 1, 1);
 if ($('#splay')) {
   $('#splay').onclick = () => {
     soundPaused = !soundPaused;
-    $('#sound').classList.toggle('paused', soundPaused);
+    if (soundSec) soundSec.classList.toggle('paused', soundPaused);
     $('#splay').setAttribute('aria-pressed', String(soundPaused));
     $('#splay').setAttribute('aria-label', soundPaused ? 'Resume track cycle' : 'Pause track cycle');
     $('#splay').innerHTML = `<i class="fa-solid ${soundPaused ? 'fa-play' : 'fa-pause'}"></i>`;
+    if (soundPaused) stopSongAudio();
+    else if (!audioMuted) playCurrentSongAudio();
   };
 }
 
+const normalizeSongs = list =>
+  (list || [])
+    .filter(x => x && x.title)
+    .map(x => ({
+      title: x.title,
+      artist: x.artist || ARTIST,
+      cover: x.cover ? (/^https?:|^assets\/|^data:|^\//i.test(x.cover) ? x.cover : BASE_MUSIC + x.cover) : '',
+      audio: x.audio || '',
+      duration: Number(x.duration) || Number(DATA.music && DATA.music.defaultDuration) || 15,
+      start: Number(x.start) || 0,
+      url: x.url || BASE_MUSIC
+    }));
+
 const loadSongList = list => {
-  songs = list.slice(0, 5);
+  const norm = normalizeSongs(list);
+  songs = norm.length ? norm : normalizeSongs(DEFAULTS.music.songs);
   $('#thumbs').innerHTML = songs
     .map(s => `<button type="button" aria-label="${esc(s.title)}"><img src="${esc(s.cover)}" alt=""></button>`)
     .join('');
-  showSong(0, 1, 1);
+  $$('#thumbs img').forEach(img => {
+    img.addEventListener('error', () => {
+      img.classList.add('noimg');
+      if (img.parentElement) img.parentElement.classList.add('noimg');
+    });
+  });
+  if (si >= songs.length) si = 0;
+  showSong(si, 1, true);
 };
 
 $('#thumbs').onclick = e => {
@@ -628,6 +838,7 @@ stg.onpointerdown = e => {
   sx = e.clientX;
 };
 stg.onpointerup = e => {
+  if (e.target.closest('#smute')) return;
   const d = e.clientX - sx;
   if (Math.abs(d) > 45) showSong(si + (d < 0 ? 1 : -1), d < 0 ? 1 : -1);
 };
@@ -644,18 +855,28 @@ if (matchMedia('(hover:hover) and (pointer:fine)').matches) {
   });
 }
 
-loadSongList(FALLBACK_SONGS);
+syncMuteUI();
 
 let lastFeed = '';
 function loadSongs() {
-  const u = DATA.music.feed;
+  const managed =
+    DATA.music && Array.isArray(DATA.music.songs) && DATA.music.songs.length
+      ? DATA.music.songs
+      : DEFAULTS.music.songs;
+  loadSongList(managed);
+
+  const u = DATA.music && DATA.music.feed;
   if (!u || u === lastFeed) return;
   lastFeed = u;
   fetch(u)
     .then(r => r.json())
     .then(j => {
-      const list = (Array.isArray(j) ? j : j.items || []).filter(x => x.title && x.cover);
-      if (list.length) loadSongList(list);
+      const remote = (Array.isArray(j) ? j : j.items || []).filter(x => x && x.title);
+      if (!remote.length) return;
+      /* Merge remote cover/url only if local managed list is empty or missing cover */
+      if (!DATA.music || !Array.isArray(DATA.music.songs) || !DATA.music.songs.length) {
+        loadSongList(remote);
+      }
     })
     .catch(() => {});
 }
@@ -724,6 +945,11 @@ const applyContent = c => {
       DATA[k] = Array.isArray(DEFAULTS[k]) ? c[k] : Object.assign({}, DEFAULTS[k], c[k]);
     }
   });
+  if (!DATA.music || !Array.isArray(DATA.music.songs) || !DATA.music.songs.length) {
+    DATA.music = Object.assign({}, DEFAULTS.music, DATA.music || {}, {
+      songs: JSON.parse(JSON.stringify(DEFAULTS.music.songs))
+    });
+  }
   renderAll();
 };
 

@@ -222,7 +222,7 @@ const SECTIONS = {
       }),
       F('list', 'creative', 'Books & creative work', {
         noun: 'book',
-        add: { title: 'New book', tag: 'Book', url: '', image: '', shape: 'portrait', fit: 'cover' },
+        add: { title: 'New book', tag: 'Book', url: '', image: '', shape: 'wide', fit: 'cover' },
         head: WH,
         fields: WF
       })
@@ -239,12 +239,55 @@ const SECTIONS = {
   },
   Music: {
     i: 'fa-music',
-    d: 'Links used on the Sound page',
+    d: 'Manage songs, audio paths, play durations and links on the Sound page',
     sub: 'music',
     fields: [
+      F('num', 'defaultDuration', 'Default play duration per song (seconds)', {
+        ic: 'fa-regular fa-clock',
+        hint: 'Fallback duration (e.g. 15 seconds) used if a song does not specify its own duration.'
+      }),
+      F('list', 'songs', 'Songs & short audio previews', {
+        noun: 'song',
+        ic: 'fa-solid fa-compact-disc',
+        add: {
+          title: 'New song',
+          artist: 'Aditya Raj',
+          cover: '',
+          audio: 'assets/music/new-song.mp3',
+          duration: 15,
+          start: 0,
+          url: 'https://'
+        },
+        head: it => ({
+          t: it.cover ? `<img src="${esc(cdn(it.cover, 100))}" alt="">` : '<i class="fa-solid fa-music"></i>',
+          a: it.title || 'Untitled song',
+          b: `${it.duration || (DATA && DATA.music && DATA.music.defaultDuration) || 15}s · ${it.audio || 'No song path set'}`
+        }),
+        fields: [
+          F('text', 'title', 'Song title', { ic: 'fa-solid fa-heading' }),
+          F('text', 'artist', 'Artist', { ic: 'fa-regular fa-user' }),
+          F('file', 'audio', 'Song audio path or upload (.mp3, .wav, .m4a, URL)', {
+            ic: 'fa-solid fa-music',
+            accept: 'audio/*',
+            hint: 'Place your song path here (for example assets/music/pyar-ho-na-jaye.mp3 or https://...) or upload an audio file.'
+          }),
+          F('num', 'duration', 'Play duration (seconds)', {
+            ic: 'fa-solid fa-hourglass-half',
+            hint: 'How long this song plays (after user unmutes) before advancing to the next song.'
+          }),
+          F('num', 'start', 'Start offset (seconds, optional)', {
+            ic: 'fa-solid fa-forward-step',
+            hint: 'Second mark in the audio file where playback starts (0 = beginning).'
+          }),
+          F('img', 'cover', 'Song cover image', { max: 1000 }),
+          F('text', 'url', 'Full song link (Spotify / YouTube / Website)', { ic: 'fa-solid fa-arrow-up-right-from-square' })
+        ]
+      }),
       F('text', 'spotify', 'Spotify artist link'),
       F('text', 'website', 'Music website link'),
-      F('text', 'feed', 'Songs feed link (songs.json)')
+      F('text', 'feed', 'External songs feed link (songs.json, optional)', {
+        hint: 'Optional fallback feed. Your songs list above always takes priority.'
+      })
     ]
   },
   Contact: {
@@ -355,18 +398,21 @@ function field(f, o) {
     c.append(r);
   } else if (f.t === 'img' || f.t === 'file') {
     const img = f.t === 'img';
+    const isAud = f.accept === 'audio/*' || f.k === 'audio';
+    const pvIcon = img ? 'fa-regular fa-image' : isAud ? 'fa-solid fa-music' : 'fa-regular fa-file-pdf';
     const box = el(
-      `<div class="up"><div class="pvb"><i class="${
-        img ? 'fa-regular fa-image' : 'fa-regular fa-file-pdf'
-      }"></i></div><div class="upr"><div class="row"><button type="button" class="b go"><i class="fa-solid fa-cloud-arrow-up"></i><span>Upload</span></button><button type="button" class="b rm" aria-label="Remove"><i class="fa-regular fa-trash-can"></i></button></div><span class="stat">${
-        img ? 'Optimised automatically before upload.' : 'PDF or any file.'
+      `<div class="up"><div class="pvb"><i class="${pvIcon}"></i></div><div class="upr"><div class="row"><button type="button" class="b go"><i class="fa-solid fa-cloud-arrow-up"></i><span>Upload</span></button><button type="button" class="b rm" aria-label="Remove"><i class="fa-regular fa-trash-can"></i></button></div><span class="stat">${
+        img ? 'Optimised automatically before upload.' : isAud ? 'Type a song path below or upload an audio file.' : 'PDF or any file.'
       }</span></div></div>`
     );
     const lk = el(
-      '<label class="link"><i class="fa-solid fa-link"></i><input type="text" placeholder="…or paste a link" inputmode="url" autocapitalize="off" spellcheck="false"></label>'
+      `<label class="link"><i class="fa-solid ${isAud ? 'fa-folder-open' : 'fa-link'}"></i><input type="text" placeholder="${
+        isAud ? 'e.g. assets/music/song.mp3 or https://…' : '…or paste a link / path'
+      }" inputmode="url" autocapitalize="off" spellcheck="false"></label>`
     );
+    const audWrap = isAud ? el('<div class="aud-wrap" hidden><audio controls preload="metadata" class="aud-pv"></audio></div>') : null;
     const inp = $('input', lk);
-    const fi = el(`<input type="file" hidden accept="${img ? 'image/*' : '*/*'}">`);
+    const fi = el(`<input type="file" hidden accept="${f.accept || (img ? 'image/*' : '*/*')}">`);
     const pvb = $('.pvb', box);
     const go = $('.go', box);
     const rm = $('.rm', box);
@@ -382,6 +428,29 @@ function field(f, o) {
         m.src = cdn(v, 200);
         m.onerror = () => m.remove();
         pvb.append(m);
+      }
+      if (isAud && audWrap) {
+        const audEl = $('audio', audWrap);
+        if (v) {
+          audWrap.hidden = false;
+          if (audEl.dataset.src !== v) {
+            audEl.dataset.src = v;
+            audEl.src = v;
+          }
+          audEl.onloadedmetadata = () => {
+            const d = Math.round(audEl.duration || 0);
+            if (d > 0) {
+              stat.innerHTML = `Path: <b>${esc(v)}</b> · Track length: <b>${d}s</b>`;
+            }
+          };
+          audEl.onerror = () => {
+            stat.innerHTML = `Path set: <b>${esc(v)}</b> (place audio file at this path)`;
+          };
+        } else {
+          audWrap.hidden = true;
+          audEl.removeAttribute('src');
+          audEl.dataset.src = '';
+        }
       }
     };
     inp.value = o[f.k] || '';
@@ -428,7 +497,7 @@ function field(f, o) {
       ic.className = 'fa-solid fa-cloud-arrow-up';
       go.disabled = false;
     };
-    c.append(box, lk, fi);
+    c.append(box, lk, ...(audWrap ? [audWrap] : []), fi);
   } else if (f.t === 'imgs') {
     const g = el('<div class="g"></div>');
     const fi = el('<input type="file" hidden multiple accept="image/*">');
@@ -617,6 +686,11 @@ const merge = c => {
       if (c[k] !== undefined) {
         d[k] = Array.isArray(d[k]) ? c[k] : Object.assign({}, d[k], c[k]);
       }
+    });
+  }
+  if (!d.music || !Array.isArray(d.music.songs) || !d.music.songs.length) {
+    d.music = Object.assign({}, DEFAULTS.music, d.music || {}, {
+      songs: JSON.parse(JSON.stringify(DEFAULTS.music.songs))
     });
   }
   migrated = fixStats(d);
@@ -822,3 +896,14 @@ if (!cloudReady()) {
     }
   });
 }
+
+document.addEventListener(
+  'error',
+  e => {
+    const t = e.target;
+    if (t && t.tagName === 'IMG' && t.closest('.tb')) {
+      t.parentElement.innerHTML = '<i class="fa-solid fa-compact-disc"></i>';
+    }
+  },
+  true
+);

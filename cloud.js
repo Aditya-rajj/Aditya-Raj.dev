@@ -72,7 +72,7 @@ const DEFAULTS = {
       year: '2025',
       url: '',
       image: 'https://broken-melodies.vercel.app/almost%20Yours.png',
-      shape: 'portrait',
+      shape: 'wide',
       fit: 'cover',
       desc: 'What happens when two broken souls find their missing pieces in each other, only to realize the world has different plans?',
       tags: 'Book, Fiction, Romance'
@@ -93,7 +93,55 @@ const DEFAULTS = {
   music: {
     spotify: 'https://open.spotify.com/artist/0OTaxoblHJk2crI3tZ1K1V',
     website: 'https://broken-melodies.vercel.app/',
-    feed: 'https://broken-melodies.vercel.app/songs.json'
+    feed: 'https://broken-melodies.vercel.app/songs.json',
+    defaultDuration: 15,
+    songs: [
+      {
+        title: 'Pyar Ho Na Jaye',
+        artist: 'Aditya Raj',
+        cover: 'https://broken-melodies.vercel.app/pyar_ho_na_jaye.png',
+        audio: 'assets/music/pyar-ho-na-jaye.mp3',
+        duration: 15,
+        start: 0,
+        url: 'https://open.spotify.com/album/62bTAp0y8vpAfWr1LwAreg'
+      },
+      {
+        title: 'Almost Yours',
+        artist: 'Aditya Raj',
+        cover: 'https://broken-melodies.vercel.app/almost%20Yours.png',
+        audio: 'assets/music/almost-yours.mp3',
+        duration: 15,
+        start: 0,
+        url: 'https://broken-melodies.vercel.app/'
+      },
+      {
+        title: 'Yaadein Teri',
+        artist: 'Aditya Raj',
+        cover: 'https://broken-melodies.vercel.app/yaddain%20teri.jpg',
+        audio: 'https://broken-melodies.vercel.app/yaddain%20teri.mp3',
+        duration: 15,
+        start: 0,
+        url: 'https://open.spotify.com/track/1jP4JquRKRq1ssiE3tHiHe'
+      },
+      {
+        title: 'Khwab Mere',
+        artist: 'Aditya Raj',
+        cover: 'https://broken-melodies.vercel.app/khwab%20mere.jpg',
+        audio: 'assets/music/khwab-mere.mp3',
+        duration: 15,
+        start: 0,
+        url: 'https://open.spotify.com/track/2qvP8cmCcmN9gNSYLYJWWx'
+      },
+      {
+        title: 'Dil Ki Baat',
+        artist: 'Aditya Raj',
+        cover: 'https://broken-melodies.vercel.app/dil%20ki%20baat.jpg',
+        audio: 'assets/music/dil-ki-baat.mp3',
+        duration: 15,
+        start: 0,
+        url: 'https://open.spotify.com/track/0H9lyaDVMOngo2z0wd4dbG'
+      }
+    ]
   },
   contacts: [
     { cat: 'Work', icon: 'email', title: 'Email', note: 'ishaan8862@gmail.com · projects & collabs', link: 'mailto:ishaan8862@gmail.com' },

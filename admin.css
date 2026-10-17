@@ -1133,3 +1133,15 @@ body.typing .pubbar {
     display: none;
   }
 }
+
+/* Audio Path Preview Player in Manager */
+.aud-wrap {
+  padding-top: 4px;
+}
+
+.aud-pv {
+  width: 100%;
+  height: 38px;
+  border-radius: 12px;
+  outline: none;
+}

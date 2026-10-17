@@ -20,7 +20,7 @@
   <title>Aditya Raj — Creator, Developer, Musician</title>
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Instrument+Serif:ital@1&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=17">
+  <link rel="stylesheet" href="style.css?v=18">
   <noscript>
     <style>
       .rv, .hv, .ln i { opacity: 1 !important; transform: none !important; animation: none !important; }
@@ -141,7 +141,7 @@
           </div>
         </div>
 
-        <!-- Books Editorial View (Same Stage Size, User-Scrollable) -->
+        <!-- Books Minimalist View (16:9 Landscape Poster Top + Text & Button Bottom, User-Scrollable) -->
         <div class="wview" id="w-book" aria-hidden="true">
           <div class="rail brail" id="rail2"></div>
           <div class="wbar">
@@ -156,7 +156,7 @@
       </div>
     </section>
 
-    <section class="page" id="sound">
+    <section class="page muted" id="sound">
       <div class="lab rv"><span>03 — Sound</span><span>Broken Melodies</span></div>
       <h2 class="big rv">Latest <em>releases</em></h2>
       <div class="stage rv">
@@ -168,9 +168,13 @@
             <b id="stit-art">PYAR HO NA JAYE</b>
             <small>BROKEN MELODIES STUDIO</small>
           </div>
+          <button type="button" class="smute-pill on" id="smute" aria-label="Unmute short music preview" aria-pressed="false">
+            <i class="fa-solid fa-volume-xmark"></i>
+            <span id="smute-txt">Tap to unmute</span>
+          </button>
         </div>
       </div>
-      <div class="now rv">
+      <div class="now rv" id="snow">
         <div class="now-top">
           <span class="eq" id="seq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
           <a class="ttl" id="stl" href="https://broken-melodies.vercel.app/" target="_blank" rel="noopener">
@@ -183,8 +187,9 @@
       <div class="sctrl rv">
         <button type="button" class="scb" id="sprev" aria-label="Previous track"><i class="fa-solid fa-backward-step"></i></button>
         <button type="button" class="scb spause" id="splay" aria-label="Pause track cycle" aria-pressed="false"><i class="fa-solid fa-pause"></i></button>
+        <button type="button" class="scb smute-ic" id="smute2" aria-label="Unmute audio" aria-pressed="false" data-tip="Unmute / Mute"><i class="fa-solid fa-volume-xmark"></i></button>
         <div class="prog" id="prog"><i></i></div>
-        <span class="scnt" id="scnt">01 / 05</span>
+        <span class="scnt" id="scnt">01 / 05 · 15s</span>
         <button type="button" class="scb" id="snext" aria-label="Next track"><i class="fa-solid fa-forward-step"></i></button>
       </div>
       <div class="thumbs rv" id="thumbs"></div>
@@ -192,6 +197,7 @@
         <a class="btn" id="spot" href="https://open.spotify.com/artist/0OTaxoblHJk2crI3tZ1K1V" target="_blank" rel="noopener">Listen now <i class="fa-brands fa-spotify"></i></a>
         <a class="ic" id="web" href="https://broken-melodies.vercel.app/" target="_blank" rel="noopener" aria-label="My music website" data-tip="Music site"><i class="fa-solid fa-globe"></i></a>
       </div>
+      <audio id="saudio" preload="metadata" playsinline></audio>
     </section>
 
     <section class="page" id="frames">
@@ -284,8 +290,8 @@
     <a href="#talk" aria-label="Talk"><i class="fa-solid fa-paper-plane"></i><span>Talk</span></a>
   </nav>
 
-  <script src="cloud-config.js?v=17"></script>
-  <script src="cloud.js?v=17"></script>
-  <script src="script.js?v=17"></script>
+  <script src="cloud-config.js?v=18"></script>
+  <script src="cloud.js?v=18"></script>
+  <script src="script.js?v=18"></script>
 </body>
 </html>
