@@ -78,7 +78,7 @@ const DEFAULTS = {
       tags: 'Book, Fiction, Romance'
     }
   ],
-  site: { url: '' },
+  site: { url: 'https://aditya-raj.rf.gd/' },
   photos: {
     list: [
       'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=500&auto=format&fit=crop',

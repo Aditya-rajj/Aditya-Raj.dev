@@ -1,6 +1,13 @@
 const DATA = JSON.parse(JSON.stringify(DEFAULTS));
 const PREVIEW = /[?&]preview/.test(location.search);
 
+/* Strip InfinityFree / iFastNet anti-bot ?i=1 query parameter from address bar so canonical URL stays clean */
+if (/^\?i=\d+$/.test(location.search) && history.replaceState) {
+  try {
+    history.replaceState(null, '', location.pathname + location.hash);
+  } catch (e) {}
+}
+
 if (PREVIEW) {
   document.documentElement.classList.add('ready', 'pv');
   const intro = document.getElementById('in');
@@ -360,7 +367,7 @@ const R = {
       const bgStyle = fit && p.image ? `;--bg:url('${esc(cdn(p.image, 300))}')` : '';
       const attrs = `class="card${fit ? ' fit' : ''}${hasDetails(p) ? ' hasd' : ''}${p.image ? '' : ' noimg'}" style="--ar:${a[0]};--arn:${a[1]}${bgStyle}" data-k="p" data-i="${i}" data-num="${num}"`;
       const sub = p.desc || p.tags || '';
-      const body = `<img src="${esc(cdn(p.image, 800))}" alt="" loading="lazy">${
+      const body = `<img src="${esc(cdn(p.image, 800))}" alt="${esc(p.title)} — ${esc(p.tag || 'Project')} by Aditya Raj" loading="lazy">${
         p.video ? `<video class="pvv" muted loop playsinline preload="none" data-src="${esc(cdn(p.video, 600))}"></video>` : ''
       }${p.tag ? `<span class="tg">${esc(p.tag)}</span>` : ''}<i class="go fa-solid ${
         p.url || hasDetails(p) ? 'fa-arrow-right' : 'fa-expand'
@@ -380,7 +387,7 @@ const R = {
       const sub = p.desc || p.tags || '';
       const ctaLabel = hasDetails(p) ? 'Read' : p.url ? 'Open' : 'View';
       const ctaIcon = p.url && !hasDetails(p) ? 'fa-arrow-up-right-from-square' : 'fa-arrow-right';
-      const body = `<div class="btop"><img src="${esc(cdn(p.image, 900))}" alt="" loading="lazy"${
+      const body = `<div class="btop"><img src="${esc(cdn(p.image, 900))}" alt="${esc(p.title)} — ${esc(p.tag || 'Book')} by Aditya Raj" loading="lazy"${
         p.image ? '' : ' class="noimg"'
       }>${
         p.video ? `<video class="pvv" muted loop playsinline preload="none" data-src="${esc(cdn(p.video, 600))}"></video>` : ''
@@ -469,6 +476,55 @@ const R = {
   },
 
   seo() {
+    const rawUrl = (DATA.site && DATA.site.url) || 'https://aditya-raj.rf.gd/';
+    const canonUrl = rawUrl.replace(/index\.html$/i, '').replace(/\/?$/, '/');
+    const fullName = [DATA.hero.line1, DATA.hero.line2].filter(Boolean).join(' ').trim() || 'Aditya Raj';
+    const cleanTagline = String(DATA.hero.tagline || '').replace(/\*/g, '').trim();
+    const mailContact = (DATA.contacts || []).find(c => c.icon === 'email' && c.link);
+    const sameAsSet = new Set(
+      [
+        ...(DATA.socials || []).map(x => x.link),
+        ...(DATA.contacts || [])
+          .filter(c => /^https?:\/\//i.test(c.link || '') && !/wa\.me|whatsapp\.com/i.test(c.link || ''))
+          .map(c => c.link),
+        DATA.music && DATA.music.spotify,
+        DATA.music && DATA.music.website,
+        DATA.photos && DATA.photos.instagram
+      ].filter(Boolean)
+    );
+    const skillsList = [
+      ...String((DATA.about && DATA.about.dev) || '').split(','),
+      ...String((DATA.about && DATA.about.creative) || '').split(',')
+    ]
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    const itemElements = [
+      ...(DATA.projects || []).map((p, idx) => ({
+        '@type': 'ListItem',
+        position: idx + 1,
+        item: {
+          '@type': /music|site/i.test(p.tag || '') ? 'WebSite' : 'WebApplication',
+          name: p.title,
+          url: p.url || canonUrl,
+          author: { '@id': canonUrl + '#person' },
+          description: p.desc || `${p.title} by ${fullName}`
+        }
+      })),
+      ...getBooks().map((b, idx) => ({
+        '@type': 'ListItem',
+        position: (DATA.projects ? DATA.projects.length : 0) + idx + 1,
+        item: {
+          '@type': 'Book',
+          name: b.title,
+          author: { '@id': canonUrl + '#person' },
+          ...(b.year ? { datePublished: String(b.year) } : {}),
+          ...(b.url ? { url: b.url } : {}),
+          description: b.desc || `${b.title} — Book by ${fullName}`
+        }
+      }))
+    ];
+
     let e = $('#ld');
     if (!e) {
       e = document.createElement('script');
@@ -478,11 +534,50 @@ const R = {
     }
     e.textContent = JSON.stringify({
       '@context': 'https://schema.org',
-      '@type': 'Person',
-      name: DATA.hero.line1 + ' ' + DATA.hero.line2,
-      description: String(DATA.hero.tagline || '').replace(/\*/g, ''),
-      url: location.origin + location.pathname,
-      sameAs: DATA.socials.filter(x => x.link).map(x => x.link)
+      '@graph': [
+        {
+          '@type': 'WebSite',
+          '@id': canonUrl + '#website',
+          url: canonUrl,
+          name: `${fullName} — Personal Portfolio`,
+          alternateName: [`${fullName} Portfolio`, fullName],
+          description: cleanTagline || `Official personal portfolio of ${fullName}.`,
+          inLanguage: 'en',
+          publisher: { '@id': canonUrl + '#person' }
+        },
+        {
+          '@type': 'ProfilePage',
+          '@id': canonUrl + '#profilepage',
+          url: canonUrl,
+          name: `${fullName} | Software Developer, Creator & Personal Portfolio`,
+          description: cleanTagline || `Official personal portfolio of ${fullName}.`,
+          isPartOf: { '@id': canonUrl + '#website' },
+          about: { '@id': canonUrl + '#person' },
+          mainEntity: { '@id': canonUrl + '#person' }
+        },
+        {
+          '@type': 'Person',
+          '@id': canonUrl + '#person',
+          name: fullName,
+          givenName: DATA.hero.line1 || 'Aditya',
+          familyName: DATA.hero.line2 || 'Raj',
+          url: canonUrl,
+          image: /^https?:/i.test(DATA.hero.image || '')
+            ? DATA.hero.image
+            : canonUrl + String(DATA.hero.image || 'assets/profile.jpg').replace(/^\//, ''),
+          jobTitle: 'Software Developer, Photographer & Musician',
+          description: cleanTagline,
+          ...(mailContact ? { email: mailContact.link } : {}),
+          ...(skillsList.length ? { knowsAbout: skillsList } : {}),
+          sameAs: [...sameAsSet]
+        },
+        {
+          '@type': 'ItemList',
+          '@id': canonUrl + '#projects',
+          name: `Selected Software Projects & Creative Works by ${fullName}`,
+          itemListElement: itemElements
+        }
+      ]
     });
   }
 };
@@ -532,6 +627,7 @@ const showSong = (i, dir = 1, now = false) => {
     sl.classList.remove('noimg');
     delete sl.dataset.fb;
     sl.src = s.cover;
+    sl.alt = `${s.title} — Original release by ${s.artist || ARTIST}`;
     $('#st').textContent = s.title;
     $('#stl').href = s.url || BASE_MUSIC;
     $('#sa').textContent = s.artist || ARTIST;
@@ -570,7 +666,7 @@ prog.addEventListener('animationend', () => showSong(si + 1));
 const loadSongList = list => {
   songs = list.slice(0, 5);
   $('#thumbs').innerHTML = songs
-    .map(s => `<button type="button" aria-label="${esc(s.title)}"><img src="${esc(s.cover)}" alt=""></button>`)
+    .map(s => `<button type="button" aria-label="${esc(s.title)}"><img src="${esc(s.cover)}" alt="${esc(s.title)} — ${esc(s.artist || ARTIST)}" loading="lazy"></button>`)
     .join('');
   showSong(0, 1, true);
 };

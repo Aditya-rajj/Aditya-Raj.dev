@@ -1,13 +1,13 @@
-const CACHE = 'aditya-portfolio-v15';
+const CACHE = 'aditya-portfolio-v21';
 const ASSETS = [
   './',
   './index.html',
   './offline.html',
   './404.html',
-  './style.css?v=20',
-  './cloud-config.js?v=20',
-  './cloud.js?v=20',
-  './script.js?v=20',
+  './style.css?v=21',
+  './cloud-config.js?v=21',
+  './cloud.js?v=21',
+  './script.js?v=21',
   './manifest.webmanifest'
 ];
 

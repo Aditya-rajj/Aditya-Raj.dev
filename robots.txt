@@ -1,0 +1,8 @@
+# robots.txt for Aditya Raj — Personal Portfolio (https://aditya-raj.rf.gd/)
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /404.html
+Disallow: /offline.html
+
+Sitemap: https://aditya-raj.rf.gd/sitemap.xml
