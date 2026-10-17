@@ -20,7 +20,7 @@
   <title>Aditya Raj — Creator, Developer, Musician</title>
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Instrument+Serif:ital@1&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-  <link rel="stylesheet" href="style.css?v=15">
+  <link rel="stylesheet" href="style.css?v=17">
   <noscript>
     <style>
       .rv, .hv, .ln i { opacity: 1 !important; transform: none !important; animation: none !important; }
@@ -30,15 +30,16 @@
 </head>
 <body>
   <div id="in" aria-hidden="true"><b></b></div>
+  <div class="sprog" id="sprog" aria-hidden="true"><i id="spbar"></i></div>
 
   <main tabindex="0">
     <section class="page in" id="home">
       <div class="lab hv">
         <span>Portfolio ’26</span>
-        <span class="live"><i></i>Indian from earth</span>
+        <span class="live"><i></i><b id="ltxt">Indian from earth</b><em id="lclk"></em></span>
       </div>
       <div class="hero">
-        <div class="arch hv" style="--i:1">
+        <div class="arch hv" style="--i:1" data-mono="AR" data-sub="CREATOR · DEV · MUSIC">
           <img src="assets/profile.jpg" alt="Aditya Raj">
           <button type="button" class="badge" id="shb" aria-label="Share my portfolio">
             <svg viewBox="0 0 120 120" aria-hidden="true">
@@ -60,17 +61,17 @@
       <p class="tag hv" style="--i:3">Independent creator &amp; <em>musician.</em> Visuals, music and digital experiences.</p>
       <div class="cta hv" style="--i:4">
         <a class="btn" href="#talk">Get in touch <i class="fa-solid fa-arrow-right"></i></a>
-        <a class="ic" href="https://instagram.com/aadi.echo" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-        <a class="ic" href="https://github.com/Aditya-rajj" target="_blank" rel="noopener" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
+        <a class="ic" href="https://instagram.com/aadi.echo" target="_blank" rel="noopener" aria-label="Instagram" data-tip="Instagram"><i class="fa-brands fa-instagram"></i></a>
+        <a class="ic" href="https://github.com/Aditya-rajj" target="_blank" rel="noopener" aria-label="GitHub" data-tip="GitHub"><i class="fa-brands fa-github"></i></a>
       </div>
       <div class="hglow" aria-hidden="true"></div>
     </section>
 
     <section class="page" id="about">
-      <div class="lab rv"><span>01 — About</span></div>
+      <div class="lab rv"><span>01 — About</span><span>Multi-disciplinary</span></div>
       <h2 class="big rv">Developer, photographer &amp; <em>musician.</em></h2>
       <p class="quote rv">“Jack of all trades, <em>master of none.</em>”</p>
-      <div class="stats rv">
+      <div class="stats rv" title="Tap to replay counter">
         <div><b data-n="56">0</b><span>Projects</span></div>
         <div><b data-n="23">0</b><span>Clients</span></div>
         <div><b data-n="3">0</b><span>Years</span></div>
@@ -121,54 +122,36 @@
             <i class="fa-solid fa-code"></i><span>Projects</span><small id="n1">04</small>
           </button>
           <button type="button" role="tab" aria-selected="false" data-w="book">
-            <i class="fa-solid fa-book-open"></i><span>Books</span><small id="n2">01</small>
+            <i class="fa-solid fa-feather-pointed"></i><span>Books</span><small id="n2">01</small>
           </button>
         </div>
       </div>
 
-      <!-- Projects View -->
-      <div class="wview rv" id="w-proj">
-        <div class="rail" id="rail1"></div>
-        <div class="wbar">
-          <div class="wdots" id="wdots" role="tablist" aria-label="Project slides"></div>
-          <span class="wcnt" id="wcnt">01 / 04</span>
-          <div class="arr" id="warr">
-            <button type="button" data-d="-1" aria-label="Previous project"><i class="fa-solid fa-chevron-left"></i></button>
-            <button type="button" data-d="1" aria-label="Next project"><i class="fa-solid fa-chevron-right"></i></button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Books Showcase View (Styled Like Music) -->
-      <div class="wview bview rv" id="w-book" hidden>
-        <div class="stage bstage" id="bstage">
-          <div class="bdeck" id="bdeck" data-shape="portrait">
-            <div class="bpages" aria-hidden="true"><i></i></div>
-            <div class="bsleeve" id="bsleeve" role="button" tabindex="0" aria-label="Open book details">
-              <img id="bimg" alt="">
-              <video class="pvv" id="bvid" muted loop playsinline preload="none"></video>
-              <span class="tg" id="btg">Book</span>
+      <div class="wstage rv" id="wstage">
+        <!-- Projects View -->
+        <div class="wview on" id="w-proj" aria-hidden="false">
+          <div class="rail" id="rail1"></div>
+          <div class="wbar">
+            <div class="wdots" id="wdots" role="tablist" aria-label="Project slides"></div>
+            <span class="wcnt" id="wcnt">01 / 04</span>
+            <div class="arr" id="warr">
+              <button type="button" data-d="-1" aria-label="Previous project"><i class="fa-solid fa-chevron-left"></i></button>
+              <button type="button" data-d="1" aria-label="Next project"><i class="fa-solid fa-chevron-right"></i></button>
             </div>
           </div>
         </div>
-        <div class="now bnow">
-          <div class="bmeta" id="bmeta"></div>
-          <a class="ttl" id="btl" href="#book">
-            <h3 id="bt">&nbsp;</h3>
-            <i class="fa-solid fa-arrow-up-right-from-square"></i>
-          </a>
-          <p class="bdesc" id="bd"></p>
-        </div>
-        <div class="prog" id="bprog"><i></i></div>
-        <div class="thumbs" id="bthumbs"></div>
-        <div class="cta" id="bcta">
-          <button type="button" class="btn" id="bopen">
-            <span id="bopen-txt">Explore book</span>
-            <i class="fa-solid fa-book-open"></i>
-          </button>
-          <button type="button" class="ic" id="bzoom" aria-label="View cover full screen">
-            <i class="fa-solid fa-expand"></i>
-          </button>
+
+        <!-- Books Editorial View (Same Stage Size, User-Scrollable) -->
+        <div class="wview" id="w-book" aria-hidden="true">
+          <div class="rail brail" id="rail2"></div>
+          <div class="wbar">
+            <div class="wdots" id="bdots" role="tablist" aria-label="Book slides"></div>
+            <span class="wcnt" id="bcnt">01 / 01</span>
+            <div class="arr" id="barr">
+              <button type="button" data-d="-1" aria-label="Previous book"><i class="fa-solid fa-chevron-left"></i></button>
+              <button type="button" data-d="1" aria-label="Next book"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -177,28 +160,42 @@
       <div class="lab rv"><span>03 — Sound</span><span>Broken Melodies</span></div>
       <h2 class="big rv">Latest <em>releases</em></h2>
       <div class="stage rv">
-        <div class="deck" id="deck">
+        <div class="deck" id="deck" data-stitle="Pyar Ho Na Jaye" data-snum="TRACK 01">
           <div class="rec"><i></i></div>
           <img class="sleeve" id="sleeve" alt="">
+          <div class="sart" aria-hidden="true">
+            <span id="snum">TRACK 01 · ORIGINAL</span>
+            <b id="stit-art">PYAR HO NA JAYE</b>
+            <small>BROKEN MELODIES STUDIO</small>
+          </div>
         </div>
       </div>
       <div class="now rv">
-        <a class="ttl" id="stl" href="https://broken-melodies.vercel.app/" target="_blank" rel="noopener">
-          <h3 id="st">&nbsp;</h3>
-          <i class="fa-solid fa-arrow-up-right-from-square"></i>
-        </a>
+        <div class="now-top">
+          <span class="eq" id="seq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <a class="ttl" id="stl" href="https://broken-melodies.vercel.app/" target="_blank" rel="noopener">
+            <h3 id="st">&nbsp;</h3>
+            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+          </a>
+        </div>
         <small id="sa"></small>
       </div>
-      <div class="prog rv" id="prog"><i></i></div>
+      <div class="sctrl rv">
+        <button type="button" class="scb" id="sprev" aria-label="Previous track"><i class="fa-solid fa-backward-step"></i></button>
+        <button type="button" class="scb spause" id="splay" aria-label="Pause track cycle" aria-pressed="false"><i class="fa-solid fa-pause"></i></button>
+        <div class="prog" id="prog"><i></i></div>
+        <span class="scnt" id="scnt">01 / 05</span>
+        <button type="button" class="scb" id="snext" aria-label="Next track"><i class="fa-solid fa-forward-step"></i></button>
+      </div>
       <div class="thumbs rv" id="thumbs"></div>
       <div class="cta rv">
         <a class="btn" id="spot" href="https://open.spotify.com/artist/0OTaxoblHJk2crI3tZ1K1V" target="_blank" rel="noopener">Listen now <i class="fa-brands fa-spotify"></i></a>
-        <a class="ic" id="web" href="https://broken-melodies.vercel.app/" target="_blank" rel="noopener" aria-label="My website"><i class="fa-solid fa-globe"></i></a>
+        <a class="ic" id="web" href="https://broken-melodies.vercel.app/" target="_blank" rel="noopener" aria-label="My music website" data-tip="Music site"><i class="fa-solid fa-globe"></i></a>
       </div>
     </section>
 
     <section class="page" id="frames">
-      <div class="lab rv"><span>04 — Frames</span><span>Shot on feeling</span></div>
+      <div class="lab rv"><span>04 — Frames</span><span>Tap photo to inspect</span></div>
       <h2 class="big rv">Through my <em>lens</em></h2>
       <div class="reel rv">
         <div class="cols" id="cols" aria-label="Photography"></div>
@@ -250,7 +247,15 @@
     </div>
   </div>
 
-  <div id="lb" aria-hidden="true"><img alt=""></div>
+  <div id="lb" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Image viewer">
+    <button type="button" class="lbx" id="lbx" aria-label="Close viewer"><i class="fa-solid fa-xmark"></i></button>
+    <button type="button" class="lbn prev" id="lbp" aria-label="Previous image"><i class="fa-solid fa-chevron-left"></i></button>
+    <img alt="">
+    <button type="button" class="lbn next" id="lbn" aria-label="Next image"><i class="fa-solid fa-chevron-right"></i></button>
+    <div class="lbcap" id="lbcap"></div>
+  </div>
+
+  <div id="ftoast" class="ftoast" role="status" aria-live="polite"></div>
 
   <!-- Sarcastic No Internet Overlay -->
   <div id="net" class="sys-ov" aria-hidden="true" role="dialog" aria-modal="true" aria-label="No internet connection">
@@ -279,8 +284,8 @@
     <a href="#talk" aria-label="Talk"><i class="fa-solid fa-paper-plane"></i><span>Talk</span></a>
   </nav>
 
-  <script src="cloud-config.js?v=15"></script>
-  <script src="cloud.js?v=15"></script>
-  <script src="script.js?v=15"></script>
+  <script src="cloud-config.js?v=17"></script>
+  <script src="cloud.js?v=17"></script>
+  <script src="script.js?v=17"></script>
 </body>
 </html>

@@ -44,9 +44,38 @@ const links = $$('#dock a');
 const pill = $('.pill');
 let cur = 0;
 
+const sprog = $('#sprog');
+const showToast = msg => {
+  const t = $('#ftoast');
+  if (!t) return;
+  t.innerHTML = `<i class="fa-solid fa-check"></i><span>${esc(msg)}</span>`;
+  t.classList.add('on');
+  clearTimeout(t._tm);
+  t._tm = setTimeout(() => t.classList.remove('on'), 2200);
+};
+
+const updateClock = () => {
+  const el = $('#lclk');
+  if (!el) return;
+  try {
+    const t = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Kolkata',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    }).format(new Date());
+    el.textContent = `· ${t} IST`;
+  } catch (e) {}
+};
+updateClock();
+setInterval(updateClock, 30000);
+
 const go = (i, snap) => {
   const mv = i !== cur;
   cur = i;
+  if (sprog && pages.length) {
+    sprog.style.setProperty('--sp', ((i + 1) / pages.length).toFixed(4));
+  }
   links.forEach((a, k) => a.classList.toggle('on', k === i));
   if (snap) pill.style.transition = 'none';
   pill.style.width = links[i].offsetWidth + 'px';
@@ -152,14 +181,31 @@ const pick = (n, snap) => {
         : `href="${esc(targetUrl)}"${/^https?:/.test(c.link || '') ? ' target="_blank" rel="noopener"' : ''}${
             c.icon === 'resume' ? ' download' : ''
           }`;
+      const isMail = /^mailto:/i.test(c.link || '');
+      const rawMail = isMail ? String(c.link).replace(/^mailto:/i, '').split('?')[0] : '';
+      const copyBtn = rawMail
+        ? `<button type="button" class="rcopy" data-copy="${esc(rawMail)}" aria-label="Copy ${esc(cleanTitle)}" data-tip="Copy email"><i class="fa-regular fa-copy"></i></button>`
+        : '';
       return `<a style="--k:${k}" ${hrefAttr}><i class="l ${
         (ICONS[c.icon] || ICONS.link)[0]
-      }"></i><span>${esc(cleanTitle)}<small>${esc(cleanNote)}</small></span><i class="ar fa-solid fa-arrow-up-right-from-square"></i></a>`;
+      }"></i><span>${esc(cleanTitle)}<small>${esc(cleanNote)}</small></span>${copyBtn}<i class="ar fa-solid fa-arrow-up-right-from-square"></i></a>`;
     })
     .join('');
 };
 
 $('#rows').addEventListener('click', e => {
+  const cp = e.target.closest('.rcopy');
+  if (cp) {
+    e.preventDefault();
+    e.stopPropagation();
+    const val = cp.dataset.copy || '';
+    if (val) {
+      copyText(val)
+        .then(() => showToast('Copied ' + val))
+        .catch(() => {});
+    }
+    return;
+  }
   const a = e.target.closest('a[data-wa]');
   if (!a) return;
   e.preventDefault();
@@ -169,12 +215,18 @@ $('#rows').addEventListener('click', e => {
   } catch (err) {}
 });
 
-/* Work Section: Projects & Books Pill Switcher + Books 3D Stage */
+/* Work Section: Constant-Height Animated Pill Switcher & Dual Scrollable Rails */
 const wtbs = $$('#wtabs button');
+const rail1 = $('#rail1');
+const rail2 = $('#rail2');
 let wmode = 'proj';
-let bi = 0;
 
 const hasDetails = p => !!(p && (p.desc || p.tags || p.year || (p.shots && p.shots.length) || (p.links && p.links.length)));
+
+const getBooks = () => {
+  const C = DATA.creative && DATA.creative.length ? DATA.creative : DEFAULTS.creative;
+  return C && C.length ? C : [];
+};
 
 const placeWork = snap => {
   const idx = wmode === 'book' ? 1 : 0;
@@ -190,33 +242,15 @@ const placeWork = snap => {
   }
 };
 
-const pickWork = (mode, snap) => {
-  wmode = mode === 'book' ? 'book' : 'proj';
-  $('#work').dataset.mode = wmode;
-  wtbs.forEach(b => {
-    const on = b.dataset.w === wmode;
-    b.classList.toggle('on', on);
-    b.setAttribute('aria-selected', on);
-  });
-  placeWork(snap);
-  const isBook = wmode === 'book';
-  $('#w-proj').hidden = isBook;
-  $('#w-book').hidden = !isBook;
-  $('#w-ttl').innerHTML = isBook ? 'Selected <em>books</em>' : 'Selected <em>work</em>';
-  $('#w-sub').textContent = isBook ? 'Published words & art' : 'Swipe →';
-  if (!isBook) requestAnimationFrame(arrows);
-  else tickBook();
-};
-
-wtbs.forEach(b => {
-  b.onclick = () => pickWork(b.dataset.w);
-});
-
-const rail1 = $('#rail1');
-const updateWorkDots = () => {
-  const cards = $$('.card', rail1);
-  if (!cards.length) return;
-  const center = rail1.scrollLeft + rail1.clientWidth * 0.35;
+const syncRailBar = (railEl, dotsEl, cntEl, arrEl) => {
+  const cards = $$('.card', railEl);
+  const total = cards.length;
+  if (!total) {
+    cntEl.textContent = '00 / 00';
+    if (arrEl) arrEl.classList.add('off');
+    return;
+  }
+  const center = railEl.scrollLeft + railEl.clientWidth * 0.35;
   let active = 0;
   let best = Infinity;
   cards.forEach((c, i) => {
@@ -226,17 +260,18 @@ const updateWorkDots = () => {
       active = i;
     }
   });
-  $$('#wdots .wdot').forEach((d, i) => d.classList.toggle('on', i === active));
-  $('#wcnt').textContent = `${String(active + 1).padStart(2, '0')} / ${String(cards.length).padStart(2, '0')}`;
+  $$('.wdot', dotsEl).forEach((d, i) => d.classList.toggle('on', i === active));
+  cntEl.textContent = `${String(active + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}`;
+  if (arrEl) arrEl.classList.toggle('off', railEl.scrollWidth <= railEl.clientWidth + 4);
 };
 
 const arrows = () => {
-  const a = $('#warr');
-  if (a && rail1) a.hidden = rail1.scrollWidth <= rail1.clientWidth + 4;
-  updateWorkDots();
+  syncRailBar(rail1, $('#wdots'), $('#wcnt'), $('#warr'));
+  syncRailBar(rail2, $('#bdots'), $('#bcnt'), $('#barr'));
 };
 
-rail1.addEventListener('scroll', updateWorkDots, { passive: true });
+rail1.addEventListener('scroll', () => syncRailBar(rail1, $('#wdots'), $('#wcnt'), $('#warr')), { passive: true });
+rail2.addEventListener('scroll', () => syncRailBar(rail2, $('#bdots'), $('#bcnt'), $('#barr')), { passive: true });
 
 $$('#warr button').forEach(b => {
   b.onclick = () => {
@@ -244,167 +279,48 @@ $$('#warr button').forEach(b => {
   };
 });
 
-/* Books Showcase (Music-Style 3D Deck + Aspect Ratio + Fit + Video + Details) */
-const bdeck = $('#bdeck');
-const bsleeve = $('#bsleeve');
-const bimg = $('#bimg');
-const bvid = $('#bvid');
-const bprog = $('#bprog i');
-
-const getBooks = () => {
-  const C = DATA.creative && DATA.creative.length ? DATA.creative : DEFAULTS.creative;
-  return C && C.length ? C : [];
-};
-
-const tickBook = () => {
-  const list = getBooks();
-  bprog.classList.remove('run');
-  void bprog.offsetWidth;
-  if (list.length > 1 && wmode === 'book') bprog.classList.add('run');
-};
-
-const showBook = (i, dir = 1, now) => {
-  const list = getBooks();
-  if (!list.length) return;
-  bi = (i + list.length) % list.length;
-  const b = list[bi];
-  const applyBook = () => {
-    const shape = b.shape || 'portrait';
-    const fit = b.fit === 'contain';
-    bdeck.dataset.shape = shape;
-    bsleeve.classList.toggle('fit', fit);
-    bsleeve.classList.remove('noimg', 'vplay');
-    bsleeve.dataset.title = b.title || 'Book';
-    bsleeve.style.setProperty('--sx', dir > 0 ? '26px' : '-26px');
-    bsleeve.style.setProperty('--bg', b.image ? `url('${cdn(b.image, 300)}')` : 'none');
-
-    if (bvid) {
-      bvid.pause();
-      if (b.video) {
-        bvid.dataset.src = cdn(b.video, 600);
-        bvid.removeAttribute('src');
-      } else {
-        bvid.removeAttribute('data-src');
-        bvid.removeAttribute('src');
-      }
-    }
-
-    bimg.classList.remove('noimg');
-    delete bimg.dataset.fb;
-    bimg.src = b.image ? cdn(b.image, 900) : '';
-    if (!b.image) bimg.dispatchEvent(new Event('error'));
-
-    $('#btg').textContent = b.tag || 'Book';
-    $('#bt').textContent = b.title || 'Untitled';
-
-    const metaParts = [b.tag || 'Book', b.year].filter(Boolean);
-    const tagParts = String(b.tags || '')
-      .split(',')
-      .map(s => s.trim())
-      .filter(Boolean)
-      .slice(0, 3);
-    $('#bmeta').innerHTML = [...new Set([...metaParts, ...tagParts])].map(m => `<span>${esc(m)}</span>`).join('');
-    $('#bd').textContent = b.desc || '';
-
-    const det = hasDetails(b);
-    $('#bopen-txt').textContent = det ? 'Explore book' : b.url ? 'Open link' : 'View cover';
-    $('#bzoom').hidden = !b.image;
-
-    $$('#bthumbs button').forEach((btn, k) => btn.classList.toggle('on', k === bi));
-    bsleeve.classList.remove('ch');
-    void bsleeve.offsetWidth;
-    bsleeve.classList.add('ch');
-    bdeck.classList.remove('swap');
-    tickBook();
+$$('#barr button').forEach(b => {
+  b.onclick = () => {
+    rail2.scrollBy({ left: (b.dataset.d === '1' ? 1 : -1) * rail2.clientWidth * 0.8, behavior: 'smooth' });
   };
-
-  if (now) applyBook();
-  else {
-    bdeck.classList.add('swap');
-    setTimeout(applyBook, 300);
-  }
-};
-
-bprog.addEventListener('animationend', () => {
-  if (getBooks().length > 1) showBook(bi + 1);
 });
 
-$('#bthumbs').onclick = e => {
-  const btn = e.target.closest('button');
-  if (!btn) return;
-  const k = [...$('#bthumbs').children].indexOf(btn);
-  if (k !== bi) showBook(k, k > bi ? 1 : -1);
+const pickWork = (mode, snap) => {
+  const next = mode === 'book' ? 'book' : 'proj';
+  const changed = next !== wmode && !snap;
+  wmode = next;
+  $('#work').dataset.mode = wmode;
+  wtbs.forEach(b => {
+    const on = b.dataset.w === wmode;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-selected', on);
+  });
+  placeWork(snap);
+  const isBook = wmode === 'book';
+  $('#w-proj').classList.toggle('on', !isBook);
+  $('#w-proj').setAttribute('aria-hidden', String(isBook));
+  $('#w-book').classList.toggle('on', isBook);
+  $('#w-book').setAttribute('aria-hidden', String(!isBook));
+
+  const ttl = $('#w-ttl');
+  if (changed) {
+    ttl.style.opacity = '0';
+    ttl.style.transform = 'translateY(6px)';
+    setTimeout(() => {
+      ttl.innerHTML = isBook ? 'Selected <em>books</em>' : 'Selected <em>work</em>';
+      ttl.style.opacity = '1';
+      ttl.style.transform = 'none';
+    }, 150);
+  } else {
+    ttl.innerHTML = isBook ? 'Selected <em>books</em>' : 'Selected <em>work</em>';
+  }
+  $('#w-sub').textContent = isBook ? 'Swipe editions →' : 'Swipe →';
+  requestAnimationFrame(arrows);
 };
 
-let bsx = 0;
-const bstg = $('#bstage');
-bstg.onpointerdown = e => {
-  bsx = e.clientX;
-};
-bstg.onpointerup = e => {
-  const d = e.clientX - bsx;
-  if (Math.abs(d) > 45 && getBooks().length > 1) {
-    showBook(bi + (d < 0 ? 1 : -1), d < 0 ? 1 : -1);
-  }
-};
-
-if (matchMedia('(hover:hover) and (pointer:fine)').matches) {
-  bstg.addEventListener('pointermove', e => {
-    const r = bstg.getBoundingClientRect();
-    bdeck.style.setProperty('--ry', ((e.clientX - r.left) / r.width - 0.5) * 14 + 'deg');
-    bdeck.style.setProperty('--rx', (0.5 - (e.clientY - r.top) / r.height) * 10 + 'deg');
-  });
-  bstg.addEventListener('pointerleave', () => {
-    bdeck.style.setProperty('--ry', '0deg');
-    bdeck.style.setProperty('--rx', '0deg');
-  });
-  bsleeve.addEventListener('mouseenter', () => {
-    if (bvid && bvid.dataset.src) {
-      if (!bvid.getAttribute('src')) bvid.src = bvid.dataset.src;
-      bvid.play().then(() => bsleeve.classList.add('vplay')).catch(() => {});
-    }
-  });
-  bsleeve.addEventListener('mouseleave', () => {
-    if (bvid) {
-      bvid.pause();
-      bsleeve.classList.remove('vplay');
-    }
-  });
-}
-
-const triggerBookAction = originEl => {
-  const list = getBooks();
-  const b = list[bi];
-  if (!b) return;
-  if (hasDetails(b)) {
-    openSheet(ds, detail(b), originEl);
-  } else if (b.url) {
-    window.open(safe(b.url), '_blank', 'noopener,noreferrer');
-  } else if (b.image) {
-    $('img', lb).src = cdn(b.image, 1400);
-    lb.classList.add('on');
-  }
-};
-
-$('#bopen').onclick = e => triggerBookAction(e.currentTarget);
-$('#btl').onclick = e => {
-  e.preventDefault();
-  triggerBookAction(e.currentTarget);
-};
-bsleeve.onclick = e => triggerBookAction(e.currentTarget);
-bsleeve.onkeydown = e => {
-  if (e.key === 'Enter' || e.key === ' ') {
-    e.preventDefault();
-    triggerBookAction(bsleeve);
-  }
-};
-$('#bzoom').onclick = () => {
-  const b = getBooks()[bi];
-  if (b && b.image) {
-    $('img', lb).src = cdn(b.image, 1600);
-    lb.classList.add('on');
-  }
-};
+wtbs.forEach(b => {
+  b.onclick = () => pickWork(b.dataset.w);
+});
 
 const R = {
   hero() {
@@ -416,7 +332,16 @@ const R = {
       delete i.dataset.fb;
       i.src = cdn(h.image, 900);
     }
-    $('.live').innerHTML = '<i></i>' + esc(h.status);
+    const ltxt = $('#ltxt');
+    if (ltxt) ltxt.textContent = h.status;
+    else $('.live').innerHTML = `<i></i><b id="ltxt">${esc(h.status)}</b><em id="lclk"></em>`;
+    updateClock();
+    const archEl = $('.arch');
+    if (archEl) {
+      const m1 = String(h.line1 || 'A').trim()[0] || 'A';
+      const m2 = String(h.line2 || 'R').trim()[0] || 'R';
+      archEl.dataset.mono = (m1 + m2).toUpperCase();
+    }
     const n = $$('h1 .ln i');
     n[0].textContent = h.line1;
     n[1].textContent = h.line2;
@@ -453,12 +378,13 @@ const R = {
   work() {
     const shapes = { wide: ['16/9', 1.7778], square: ['1/1', 1], portrait: ['3/4', 0.75] };
     const B = getBooks();
-    const card = (p, defShape, k, i) => {
+
+    const projCard = (p, i) => {
       const fit = p.fit === 'contain';
-      const a = shapes[p.shape] || shapes[defShape];
+      const a = shapes[p.shape] || shapes.wide;
       const num = String(i + 1).padStart(2, '0');
       const bgStyle = fit && p.image ? `;--bg:url('${esc(cdn(p.image, 300))}')` : '';
-      const attrs = `class="card${fit ? ' fit' : ''}${hasDetails(p) ? ' hasd' : ''}" style="--ar:${a[0]};--arn:${a[1]}${bgStyle}" data-k="${k}" data-i="${i}"`;
+      const attrs = `class="card${fit ? ' fit' : ''}${hasDetails(p) ? ' hasd' : ''}${p.image ? '' : ' noimg'}" style="--ar:${a[0]};--arn:${a[1]}${bgStyle}" data-k="p" data-i="${i}" data-num="${num}"`;
       const sub = p.desc || p.tags || '';
       const body = `<img src="${esc(cdn(p.image, 800))}" alt="" loading="lazy">${
         p.video ? `<video class="pvv" muted loop playsinline preload="none" data-src="${esc(cdn(p.video, 600))}"></video>` : ''
@@ -472,28 +398,60 @@ const R = {
         : `<div ${attrs} role="button" tabindex="0" data-img="${esc(cdn(p.image, 1400))}" aria-label="View ${esc(p.title)}">${body}</div>`;
     };
 
-    rail1.innerHTML = DATA.projects.map((p, i) => card(p, 'wide', 'p', i)).join('');
-    $('#wdots').innerHTML = DATA.projects
-      .map((p, i) => `<button type="button" class="wdot${i === 0 ? ' on' : ''}" aria-label="Go to ${esc(p.title)}"></button>`)
-      .join('');
-    $$('#wdots .wdot').forEach((d, i) => {
-      d.onclick = () => {
-        const target = $$('.card', rail1)[i];
-        if (target) rail1.scrollTo({ left: target.offsetLeft - 20, behavior: 'smooth' });
-      };
-    });
+    const bookCard = (p, i) => {
+      const fit = p.fit === 'contain';
+      const shapeKey = p.shape || 'portrait';
+      const a = shapes[shapeKey] || shapes.portrait;
+      const num = String(i + 1).padStart(2, '0');
+      const bgStyle = fit && p.image ? `;--bg:url('${esc(cdn(p.image, 300))}')` : '';
+      const attrs = `class="card bcard b-${esc(shapeKey)}${fit ? ' fit' : ''}${hasDetails(p) ? ' hasd' : ''}" style="--ar:${a[0]};--arn:${a[1]}${bgStyle}" data-k="c" data-i="${i}"`;
+      const sub = p.desc || p.tags || '';
+      const tags = String(p.tags || '')
+        .split(',')
+        .map(t => t.trim())
+        .filter(Boolean)
+        .slice(0, 3);
+      const ctaLabel = hasDetails(p) ? 'Read synopsis' : p.url ? 'Open edition' : 'Inspect cover';
+      const ctaIcon = hasDetails(p) ? 'fa-book-open' : p.url ? 'fa-arrow-up-right-from-square' : 'fa-expand';
+      const body = `<div class="bstage"><div class="bcover${p.image ? '' : ' noimg'}"><span class="bspine" aria-hidden="true"></span><img src="${esc(
+        cdn(p.image, 800)
+      )}" alt="" loading="lazy">${
+        p.video ? `<video class="pvv" muted loop playsinline preload="none" data-src="${esc(cdn(p.video, 600))}"></video>` : ''
+      }<div class="bfoil" aria-hidden="true"><span>EDITION ${num}</span><b>${esc(p.title)}</b><small>${esc(
+        p.year || 'PUBLISHED'
+      )}</small></div><span class="bmark"><i class="fa-solid fa-bookmark"></i></span></div></div><div class="bfolio"><div class="bhead"><span class="btg"><i class="fa-solid fa-feather-pointed"></i>${esc(
+        p.tag || 'Book'
+      )}</span><span class="bvol">Vol. ${num}${p.year ? ' · ' + esc(p.year) : ''}</span></div><h3 class="btit">${esc(
+        p.title
+      )}</h3>${sub ? `<p class="bquote">“${esc(sub)}”</p>` : ''}${
+        tags.length ? `<div class="btags">${tags.map(t => `<span>${esc(t)}</span>`).join('')}</div>` : ''
+      }<div class="bfoot"><span class="bcta"><i class="fa-solid ${ctaIcon}"></i><span>${ctaLabel}</span></span><span class="bgo"><i class="fa-solid fa-arrow-right"></i></span></div></div>`;
+      return p.url
+        ? `<a ${attrs} href="${esc(safe(p.url))}" target="_blank" rel="noopener">${body}</a>`
+        : `<div ${attrs} role="button" tabindex="0" data-img="${esc(cdn(p.image, 1400))}" aria-label="Read ${esc(p.title)}">${body}</div>`;
+    };
+
+    rail1.innerHTML = DATA.projects.map((p, i) => projCard(p, i)).join('');
+    rail2.innerHTML = B.map((p, i) => bookCard(p, i)).join('');
+
+    const bindDots = (items, railEl, dotsEl) => {
+      dotsEl.innerHTML = items
+        .map((p, i) => `<button type="button" class="wdot${i === 0 ? ' on' : ''}" aria-label="Go to ${esc(p.title)}"></button>`)
+        .join('');
+      $$('.wdot', dotsEl).forEach((d, i) => {
+        d.onclick = () => {
+          const target = $$('.card', railEl)[i];
+          if (target) railEl.scrollTo({ left: target.offsetLeft - 20, behavior: 'smooth' });
+        };
+      });
+    };
+
+    bindDots(DATA.projects, rail1, $('#wdots'));
+    bindDots(B, rail2, $('#bdots'));
 
     $('#n1').textContent = String(DATA.projects.length).padStart(2, '0');
     $('#n2').textContent = String(B.length).padStart(2, '0');
 
-    $('#bthumbs').innerHTML = B.map(
-      b => `<button type="button" aria-label="${esc(b.title)}"><img src="${esc(cdn(b.image, 200))}" alt=""></button>`
-    ).join('');
-    $('#bthumbs').hidden = B.length <= 1;
-    $('#bprog').hidden = B.length <= 1;
-
-    bi = Math.min(bi, Math.max(0, B.length - 1));
-    showBook(bi, 1, 1);
     pickWork(wmode, 1);
     requestAnimationFrame(arrows);
   },
@@ -504,7 +462,12 @@ const R = {
     $('#cols').innerHTML = [0, 1, 2, 3, 4]
       .map(k => {
         const set = [0, 1, 2]
-          .map(j => `<img src="${esc(cdn(photos[(k + 2 * j) % photos.length], 500))}" alt="" style="aspect-ratio:${AR[(k + j) % 4]}">`)
+          .map(j => {
+            const pIdx = (k + 2 * j) % photos.length;
+            const raw = photos[pIdx];
+            const num = String(pIdx + 1).padStart(2, '0');
+            return `<img src="${esc(cdn(raw, 500))}" data-zoom="${esc(cdn(raw, 1400))}" data-cap="Frame ${num} — Through My Lens" alt="Frame ${num}" style="aspect-ratio:${AR[(k + j) % 4]}">`;
+          })
           .join('');
         return `<div class="col" style="--t:${TT[k]}s;--d:${DD[k]}s">${set}${set}</div>`;
       })
@@ -532,8 +495,8 @@ const R = {
       .map(s => {
         const iconClass = (ICONS[s.icon] || ICONS.link)[0];
         return s.link
-          ? `<a href="${esc(safe(s.link))}" target="_blank" rel="noopener" aria-label="${esc(s.title)}"><i class="${iconClass}"></i></a>`
-          : `<span title="Link coming soon" aria-label="${esc(s.title)} (coming soon)"><i class="${iconClass}"></i></span>`;
+          ? `<a href="${esc(safe(s.link))}" target="_blank" rel="noopener" aria-label="${esc(s.title)}" data-tip="${esc(s.title)}"><i class="${iconClass}"></i></a>`
+          : `<span title="Link coming soon" aria-label="${esc(s.title)} (coming soon)" data-tip="${esc(s.title)} · Soon"><i class="${iconClass}"></i></span>`;
       })
       .join('');
   },
@@ -590,23 +553,36 @@ const tick = () => {
   prog.classList.add('run');
 };
 
+let soundPaused = false;
+
 const showSong = (i, dir = 1, now) => {
+  if (!songs.length) return;
   si = (i + songs.length) % songs.length;
   const s = songs[si];
+  const tnum = String(si + 1).padStart(2, '0');
+  const tot = String(songs.length).padStart(2, '0');
   const applySong = () => {
     sl.style.setProperty('--sx', dir > 0 ? '26px' : '-26px');
     sl.classList.remove('noimg');
+    deck.classList.remove('noimg');
     delete sl.dataset.fb;
     sl.src = s.cover;
     $('#st').textContent = s.title;
     $('#stl').href = s.url || BASE_MUSIC;
     $('#sa').textContent = s.artist || ARTIST;
+    if ($('#snum')) $('#snum').textContent = `TRACK ${tnum} · ORIGINAL`;
+    if ($('#stit-art')) $('#stit-art').textContent = s.title;
+    if ($('#scnt')) $('#scnt').textContent = `${tnum} / ${tot}`;
     $$('#thumbs button').forEach((b, k) => b.classList.toggle('on', k === si));
     sl.classList.remove('ch');
     void sl.offsetWidth;
     sl.classList.add('ch');
     deck.classList.remove('swap');
     tick();
+    if (sl.complete && !sl.naturalWidth) {
+      sl.classList.add('noimg');
+      deck.classList.add('noimg');
+    }
   };
   if (now) applySong();
   else {
@@ -615,7 +591,21 @@ const showSong = (i, dir = 1, now) => {
   }
 };
 
-prog.addEventListener('animationend', () => showSong(si + 1));
+prog.addEventListener('animationend', () => {
+  if (!soundPaused) showSong(si + 1);
+});
+
+if ($('#sprev')) $('#sprev').onclick = () => showSong(si - 1, -1);
+if ($('#snext')) $('#snext').onclick = () => showSong(si + 1, 1);
+if ($('#splay')) {
+  $('#splay').onclick = () => {
+    soundPaused = !soundPaused;
+    $('#sound').classList.toggle('paused', soundPaused);
+    $('#splay').setAttribute('aria-pressed', String(soundPaused));
+    $('#splay').setAttribute('aria-label', soundPaused ? 'Resume track cycle' : 'Pause track cycle');
+    $('#splay').innerHTML = `<i class="fa-solid ${soundPaused ? 'fa-play' : 'fa-pause'}"></i>`;
+  };
+}
 
 const loadSongList = list => {
   songs = list.slice(0, 5);
@@ -871,7 +861,7 @@ if (desk) {
 
 document.addEventListener('click', e => {
   const a = e.target.closest && e.target.closest('a[href^="#"]');
-  if (!a || a.hasAttribute('data-wa') || a.id === 'btl') return;
+  if (!a || a.hasAttribute('data-wa')) return;
   const p = document.getElementById(a.getAttribute('href').slice(1));
   if (!p || !p.classList.contains('page')) return;
   const i = pages.indexOf(p);
@@ -1098,10 +1088,35 @@ $('#qrb').onclick = e => shareSheet(e.currentTarget);
 document.addEventListener('click', e => {
   const T = e.target;
   if (!T || !T.closest) return;
+  const stCard = T.closest('#about .stats > div');
+  if (stCard) {
+    $$('#about [data-n]').forEach(b => {
+      b._d = 0;
+      b.textContent = '0';
+    });
+    count($('#about'));
+    return;
+  }
+  if (T.closest('#lbx')) {
+    lb.classList.remove('on');
+    return;
+  }
+  if (T.closest('#lbp')) {
+    stepLb(-1);
+    return;
+  }
+  if (T.closest('#lbn')) {
+    stepLb(1);
+    return;
+  }
   const z = T.closest('[data-zoom]');
   if (z) {
-    $('img', lb).src = z.dataset.zoom;
-    lb.classList.add('on');
+    const scope = z.closest('.shots, #cols');
+    const items = scope ? $$('[data-zoom]', scope) : [z];
+    openLb(
+      items.map(el => ({ src: el.dataset.zoom, cap: el.dataset.cap || el.alt || '' })),
+      Math.max(0, items.indexOf(z))
+    );
     return;
   }
   const c = T.closest('.card');
@@ -1112,21 +1127,66 @@ document.addEventListener('click', e => {
     return;
   }
   if (c && c.dataset.img) {
-    $('img', lb).src = c.dataset.img;
-    lb.classList.add('on');
+    openLb([{ src: c.dataset.img, cap: c.getAttribute('aria-label') || '' }], 0);
     return;
   }
   if (T.closest('.dsx,.dsb')) {
     closeSheets();
     return;
   }
-  if (lb.classList.contains('on') && T.closest('#lb')) lb.classList.remove('on');
+  if (lb.classList.contains('on') && T.closest('#lb') && !T.closest('.lbn, .lbcap')) lb.classList.remove('on');
 });
+
+let lbList = [];
+let lbIdx = 0;
+
+const renderLb = () => {
+  const item = lbList[lbIdx];
+  if (!item) return;
+  $('img', lb).src = item.src;
+  if ($('#lbcap')) $('#lbcap').textContent = item.cap || '';
+  const multi = lbList.length > 1;
+  if ($('#lbp')) $('#lbp').hidden = !multi;
+  if ($('#lbn')) $('#lbn').hidden = !multi;
+};
+
+const openLb = (list, startIdx = 0) => {
+  lbList = list && list.length ? list : [];
+  lbIdx = startIdx;
+  renderLb();
+  lb.classList.add('on');
+};
+
+const stepLb = dir => {
+  if (lbList.length <= 1) return;
+  lbIdx = (lbIdx + dir + lbList.length) % lbList.length;
+  renderLb();
+};
 
 addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     if (lb.classList.contains('on')) lb.classList.remove('on');
     else closeSheets();
+    return;
+  }
+  if (lb.classList.contains('on')) {
+    if (e.key === 'ArrowLeft') stepLb(-1);
+    else if (e.key === 'ArrowRight') stepLb(1);
+    return;
+  }
+  if (
+    !document.querySelector('.ds.on,#net.on') &&
+    !/INPUT|TEXTAREA|SELECT/.test((e.target && e.target.tagName) || '') &&
+    (e.key === 'ArrowLeft' || e.key === 'ArrowRight')
+  ) {
+    const dir = e.key === 'ArrowRight' ? 1 : -1;
+    const activePage = pages[cur];
+    if (activePage && activePage.id === 'work') {
+      const r = wmode === 'book' ? rail2 : rail1;
+      if (r) r.scrollBy({ left: dir * r.clientWidth * 0.78, behavior: 'smooth' });
+    } else if (activePage && activePage.id === 'sound') {
+      showSong(si + dir, dir);
+    }
   }
   const a = document.activeElement;
   if (e.key === 'Enter' && a && a.matches && a.matches('.card[data-img]')) a.click();
@@ -1317,7 +1377,7 @@ if (fine) {
     { passive: true }
   );
   document.addEventListener('pointerover', e =>
-    curEl.classList.toggle('hot', !!(e.target.closest && e.target.closest('a,button,.card,.bsleeve,.lg,[role=tab]')))
+    curEl.classList.toggle('hot', !!(e.target.closest && e.target.closest('a,button,.card,.lg,[role=tab]')))
   );
   addEventListener('pointerdown', () => curEl.classList.add('down'));
   addEventListener('pointerup', () => curEl.classList.remove('down'));
@@ -1325,7 +1385,7 @@ if (fine) {
 }
 
 /* Interactive Ripple, Glow, Card Tilt & Video Previews */
-const FX = '.btn,.ic,.card,.bsleeve,.lg,.tabs,.rows a,#soc a,.dock a,.pillb,.vc,.cbtn';
+const FX = '.btn,.ic,.card,.lg,.tabs,.rows a,#soc a,.dock a,.pillb,.vc,.cbtn';
 
 const updateGlow = (t, e) => {
   const r = t.getBoundingClientRect();
